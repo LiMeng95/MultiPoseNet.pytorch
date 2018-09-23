@@ -85,7 +85,9 @@ Run inference on your own pictures.
 
 - Inference results
 
-<img src="./extra/test_images/pic2.jpg" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" title="heatmap"/><img src="./extra/output/pic2_3keypoints.png" title="keypoints"/>
+<center class="half">
+<img src="./extra/test_images/pic2.jpg" width="200px" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" width="200px" title="heatmap"/><img src="./extra/output/pic2_3keypoints.png" width="200px" title="keypoints"/>
+</center>
 
 ### Reference
 
