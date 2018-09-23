@@ -11,11 +11,12 @@ mask_dir = coco_root
 json_path = coco_root+'COCO.json'
 inp_size = 384  # input size 368
 feat_stride = 4
+backbone='resnet101'  # 'resnet50'
 
 # Set Training parameters
 params = Tester.TestParams()
 params.gpus = [0]
-params.ckpt = './extra/models/keypoint101/ckpt_baseline.h5'
+params.ckpt = './extra/models/ckpt_baseline.h5'
 params.batch_size = 10 * len(params.gpus)
 
 # validation data
@@ -25,7 +26,10 @@ valid_data = get_loader(json_path, data_dir, mask_dir, inp_size,
 print('val dataset len: {}'.format(len(valid_data.dataset)))
 
 # model
-model = poseNet(101)
+if backbone == 'resnet101':
+    model = poseNet(101)
+elif backbone == 'resnet50':
+    model = poseNet(50)
 
 
 tester = Tester(model, params, batch_processor, valid_data)

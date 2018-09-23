@@ -23,7 +23,7 @@ model_path = './models/'
 
 # Set Training parameters
 params = Trainer.TrainParams()
-params.exp_name = 'keypoint101/'
+params.exp_name = 'your_exp_name/'
 params.save_dir = './extra/models/{}'.format(params.exp_name) #./extra/models/{}'.format(params.exp_name)
 params.ckpt = None  #None checkpoint file to load
 params.re_init = False

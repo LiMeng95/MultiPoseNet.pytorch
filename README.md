@@ -2,7 +2,7 @@
 
 This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04067) ( ECCV 2018, Muhammed Kocabas et al.)
 
-![](./extra/output/pic1_3keypoints.png)
+![](./extra/output/keypoints.png)
 
 ### To Do
 

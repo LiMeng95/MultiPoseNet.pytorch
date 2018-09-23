@@ -3,7 +3,6 @@ from __future__ import print_function
 import os
 import cv2
 import datetime
-from PIL import Image
 import numpy as np
 from collections import OrderedDict
 from plot_heatmap import plot_heatmap
@@ -14,17 +13,16 @@ from pose_utils.utils.log import logger
 import pose_utils.utils.meter as meter_utils
 import pose_utils.network.net_utils as net_utils
 from pose_utils.utils.timer import Timer
-
-import torchvision.transforms.functional as tv_F
+from pose_utils.datasets.coco_data.preprocessing import resnet_preprocess
 
 class TestParams(object):
 
-    trunk = 'vgg19'  # select the model
+    trunk = 'resnet101'  # select the model
 
     testdata_dir = './extra/test_images/'
     testresult_dir = './extra/output/'
     gpus = [0]
-    ckpt = './extra/models/keypoint101/ckpt_baseline.h5'  # checkpoint file to load, no need to change this
+    ckpt = './extra/models/ckpt_baseline.h5'  # checkpoint file to load, no need to change this
 
     # # required params
     exp_name = 'multipose101'
@@ -62,15 +60,14 @@ class Tester(object):
         for img_name in img_list:
             print('Processing image: ' + img_name)
 
-            img = Image.open(os.path.join(self.params.testdata_dir, img_name))
-            shape_dst = max(img.size)
-            pad_size = abs(img.size[1] - img.size[0])
-            img = tv_F.pad(img, (0, 0, pad_size, pad_size))
-            img = tv_F.crop(img, 0, 0, shape_dst, shape_dst)
-            img_resized = tv_F.resize(img, (384, 384))
-            img_input = tv_F.to_tensor(img_resized)
-            img_resized = np.asarray(img_resized)
-            img_input = torch.unsqueeze(tv_F.normalize(img_input, [0.406, 0.485, 0.456], [0.225, 0.229, 0.224]), 0)
+            img = cv2.imread(os.path.join(self.params.testdata_dir, img_name)).astype(np.float32)
+            shape_dst = np.max(img.shape)
+            pad_size = np.abs(img.shape[1] - img.shape[0])
+            img = np.pad(img, ([0, pad_size], [0, pad_size], [0, 0]), 'constant')[:shape_dst, :shape_dst]
+            img_resized = cv2.resize(img, (384, 384))
+            img_input = resnet_preprocess(img_resized)
+            img_input = torch.from_numpy(np.expand_dims(img_input, 0))
+
             with torch.no_grad():
                 img_input = img_input.cuda(device=self.params.gpus[0])
 
@@ -82,7 +79,7 @@ class Tester(object):
             heatmap_max = np.max(heatmaps[:, :, :17], 2)
             # segment_map = heatmaps[:, :, 17]
             param = {'thre1': 0.1, 'thre2': 0.05, 'thre3': 0.5}
-            to_plot= plot_heatmap(img_resized, param, heatmaps[:, :, :17])
+            to_plot = plot_heatmap(img_resized, param, heatmaps[:, :, :17])
             cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_1heatmap.png'), heatmap_max * 256)
             # cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_2seg.png'), segment_map * 256)
             cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_3keypoints.png'), to_plot)
