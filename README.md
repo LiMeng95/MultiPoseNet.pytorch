@@ -2,9 +2,7 @@
 
 This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04067) ( ECCV 2018, Muhammed Kocabas et al.)
 
-<center class="third">
-<img src="./extra/test_images/pic1.jpg" height="200px" title="pic1"/><img src="./extra/output/pic1_1heatmap.png" height="200px" title="heatmap"/><img src="./extra/output/pic1_3keypoints.png" height="200px" title="keypoints"/>
-</center>
+<img src="./extra/output/pic1_3keypoints.png"  title="keypoints"/>
 
 ### To Do
 
@@ -87,13 +85,7 @@ Run inference on your own pictures.
 
 - Inference results
 
-<center class="third">
-<img src="./extra/test_images/pic2.jpg" height="200px" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" height="200px" title="heatmap"/><img src="./extra/output/pic2_3keypoints.png" height="200px" title="keypoints"/>
-</center>
-
-<center class="third">
-<img src="./extra/test_images/pic1.jpg" height="200px" title="pic1"/><img src="./extra/output/pic1_1heatmap.png" height="200px" title="heatmap"/><img src="./extra/output/pic1_3keypoints.png" height="200px" title="keypoints"/>
-</center>
+<img src="./extra/test_images/pic2.jpg" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" title="heatmap"/><img src="./extra/output/pic2_3keypoints.png" title="keypoints"/>
 
 ### Reference
 
