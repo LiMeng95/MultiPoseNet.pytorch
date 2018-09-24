@@ -54,7 +54,7 @@ print('train dataset len: {}'.format(len(train_data.dataset)))
 valid_data = None
 if params.val_nbatch > 0:
     valid_data = get_loader(json_path, data_dir, mask_dir, inp_size,
-                            feat_stride, preprocess='vgg', training=False,
+                            feat_stride, preprocess='resnet', training=False,
                             batch_size=params.batch_size-4*len(params.gpus), shuffle=False, num_workers=4)
     print('val dataset len: {}'.format(len(valid_data.dataset)))
 

@@ -21,7 +21,7 @@ params.batch_size = 10 * len(params.gpus)
 
 # validation data
 valid_data = get_loader(json_path, data_dir, mask_dir, inp_size,
-                        feat_stride, preprocess='vgg', training=False,
+                        feat_stride, preprocess='resnet', training=False,
                         batch_size=params.batch_size-4 * len(params.gpus), shuffle=False, num_workers=8)
 print('val dataset len: {}'.format(len(valid_data.dataset)))
 

@@ -204,9 +204,9 @@ class Trainer(object):
                     val_loss = self._val_one_epoch(self.params.val_nbatch_end_epoch)
                     if val_loss < best_loss:
                         best_file = os.path.join(self.params.save_dir,
-                                                 'ckpt_{}_{:.4f}.h5.best'.format(self.last_epoch, val_loss))
+                                                 'ckpt_{}_{:.5f}.h5.best'.format(self.last_epoch, val_loss))
                         shutil.copyfile(save_to, best_file)
-                        logger.info('Found a better ckpt ({:.3f} -> {:.3f}), '
+                        logger.info('Found a better ckpt ({:.5f} -> {:.5f}), '
                                     'saved to {}'.format(best_loss, val_loss, best_file))
                         best_loss = val_loss
 

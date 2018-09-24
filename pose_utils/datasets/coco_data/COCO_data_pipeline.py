@@ -40,7 +40,7 @@ params_transform['sigma'] = 7.0
 
 
 class Cocokeypoints(Dataset):
-    def __init__(self, root, mask_dir, index_list, data, inp_size, feat_stride, preprocess='vgg', transform=None,
+    def __init__(self, root, mask_dir, index_list, data, inp_size, feat_stride, preprocess='resnet', transform=None,
                  target_transform=None):
 
         params_transform['crop_size_x'] = inp_size
@@ -242,7 +242,7 @@ class Cocokeypoints(Dataset):
 
         # image preprocessing, which comply the model
         # trianed on Imagenet dataset
-        if self.preprocess == 'vgg':
+        if self.preprocess == 'resnet':
             img = resnet_preprocess(img)
 
         img = torch.from_numpy(img)
