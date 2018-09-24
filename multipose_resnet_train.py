@@ -46,7 +46,7 @@ print("Loading dataset...")
 # load data
 train_data = get_loader(json_path, data_dir,
                         mask_dir, inp_size, feat_stride,
-                        'vgg', params.batch_size,
+                        'resnet', params.batch_size,
                         shuffle=True, training=True, num_workers=4)
 print('train dataset len: {}'.format(len(train_data.dataset)))
 
