@@ -15,10 +15,10 @@ class ConstList(list):
 
 class ListDataParallel(DataParallel):
     def scatter(self, inputs, kwargs, device_ids):
-        return tnn_scatter_kwargs(inputs, kwargs, device_ids, dim=self.dim)
+        return pose_scatter_kwargs(inputs, kwargs, device_ids, dim=self.dim)
 
     def gather(self, outputs, output_device):
-        return tnn_gather(outputs, output_device, dim=self.dim)
+        return pose_gather(outputs, output_device, dim=self.dim)
 
 
 def scatter(inputs, target_gpus, dim=0):
@@ -46,7 +46,7 @@ def scatter(inputs, target_gpus, dim=0):
     return scatter_map(inputs)
 
 
-def tnn_scatter_kwargs(inputs, kwargs, target_gpus, dim=0):
+def pose_scatter_kwargs(inputs, kwargs, target_gpus, dim=0):
     r"""Scatter with support for kwargs dictionary"""
     inputs = scatter(inputs, target_gpus, dim) if inputs else []
     kwargs = scatter(kwargs, target_gpus, dim) if kwargs else []
@@ -59,7 +59,7 @@ def tnn_scatter_kwargs(inputs, kwargs, target_gpus, dim=0):
     return inputs, kwargs
 
 
-def tnn_gather(outputs, target_device, dim=0):
+def pose_gather(outputs, target_device, dim=0):
     r"""
     Gathers variables from different GPUs on a specified device
       (-1 means the CPU).

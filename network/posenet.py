@@ -7,7 +7,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from collections import OrderedDict
 from network.fpn import FPN50,FPN101
-from pose_utils.network.base_model import BaseModel
 from torch.nn import init
 
 class Concat(nn.Module):
@@ -16,7 +15,7 @@ class Concat(nn.Module):
     def forward(self,up1,up2,up3,up4):
         return torch.cat((up1,up2,up3,up4),1)
 
-class poseNet(BaseModel):
+class poseNet(nn.Module):
     def __init__(self,layers):
         super(poseNet,self).__init__()
         if layers == 101:

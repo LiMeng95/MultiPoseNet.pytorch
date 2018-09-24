@@ -1,11 +1,4 @@
 '''
-__copyright__  = Copyright 2017, AiFi Inc.
-__license__    =
-__version__    = 0.0
-__maintainer__ = Alberto Sadde
-__email__      = alberto@aifi.io
-__status__     = Experimental
-
 Utility functions for rtpose project
 --------------------------------------------
 Change to pytorch=0.4.0 by @LiMeng95
