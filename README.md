@@ -4,6 +4,8 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
 
 ![](./extra/output/keypoints.png)
 
+![](./extra/output/pic1_2bbx.png)
+
 ### To Do
 
 - [x] Keypoint Estimation Subnet for 17 human keypoints annotated in [COCO dataset](http://cocodataset.org/)
@@ -11,16 +13,31 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
 - [ ] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
 - [ ] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
 
+### Update
+
+- 180925:
+  - Add Person Detection Subnet (RetinaNet) in `posenet.py`. The RetinaNet checkpoint ([Google Drive](https://drive.google.com/open?id=1qyqimTdb_PJ9Wt0GE2637s8hG262rJ_N), [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/6def4775abd94bb7b84f/), backbone: resnet50) **performs poorly on Keypoint Subnet temporarily**. And we have not yet finished the training code for RetinaNet.
+  - Add NMS extension in `./lib`.
+
 ### Requirements
 
 #### Prerequisites
 - If you are using Anaconda, we suggest you create a new conda environment :`conda env create -f multipose_environment.yaml`. Maybe you should change the `channels:` and `prefix:` setting in `multipose_environment.yaml` to fit your own Anaconda environment.
   - `source activate Multipose`
   - `pip install pycocotools`
+
 - You can also follow `dependencies` setting in `multipose_environment.yaml` to build your own Python environment.
   - Pytorch = 0.4.0, Python = 3.6
   - pycocotools=2.0.0, numpy=1.14.3, scikit-image=0.13.1, opencv=3.4.2
   - ......
+
+- Build the NMS extension
+
+  ```bash
+  cd ./lib
+  bash build.sh
+  cd ..
+  ```
 
 #### Data preparation
 
@@ -86,13 +103,15 @@ Run inference on your own pictures.
 - Inference results
 
 <center class="half">
-<img src="./extra/test_images/pic2.jpg" width="200px" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" width="200px" title="heatmap"/><img src="./extra/output/pic2_3keypoints.png" width="200px" title="keypoints"/>
+<img src="./extra/test_images/pic2.jpg" width="200px" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" width="200px" title="heatmap"/><img src="./extra/output/pic2_2bbx.png" width="200px" title="bounding box"/><img src="./extra/output/pic2_3keypoints.png" width="200px" title="keypoints"/>
 </center>
+
 
 ### Reference
 
 - [@ZheC Realtime_Multi-Person_Pose_Estimation](https://github.com/ZheC/Realtime_Multi-Person_Pose_Estimation) : The first 4 Training Steps to generate our own COCO dataset.
 - Thanks [@IcewineChen](https://github.com/IcewineChen/pytorch-MultiPoseNet) for the implement of `posenet`.
+- Thanks [@yhenon](https://github.com/yhenon/pytorch-retinanet) for the implement of RetinaNet in PyTorch.
 
 ### Citation
 ```

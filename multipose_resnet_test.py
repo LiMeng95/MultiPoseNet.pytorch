@@ -10,7 +10,6 @@ params.gpus = [0]
 params.ckpt = './extra/models/ckpt_baseline.h5'
 
 # model
-# model
 if backbone == 'resnet101':
     model = poseNet(101)
 elif backbone == 'resnet50':

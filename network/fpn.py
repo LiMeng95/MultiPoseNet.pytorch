@@ -47,28 +47,31 @@ class FPN(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.conv6 = nn.Conv2d(2048, 256, kernel_size=3, stride=2, padding=1)
-        self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1)
 
+        # fpn for detection subnet (RetinaNet) P6,P7
+        self.conv6 = nn.Conv2d(2048, 256, kernel_size=3, stride=2, padding=1)  # p6
+        self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1)  # p7
+
+        # pure fpn layers for detection subnet (RetinaNet)
         # Lateral layers
-        # 降channel用的，从顶向下加的时候得降channel
-        self.latlayer1 = nn.Conv2d(2048, 256, kernel_size=1, stride=1, padding=0)
-        self.latlayer2 = nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)
-        self.latlayer3 = nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0)
+        self.latlayer1 = nn.Conv2d(2048, 256, kernel_size=1, stride=1, padding=0)  # c5 -> p5
+        self.latlayer2 = nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)  # c4 -> p4
+        self.latlayer3 = nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0)  # c3 -> p3
+        # smooth
+        self.toplayer0 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)  # smooth p5
+        self.toplayer1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)  # smooth p4
+        self.toplayer2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)  # smooth p3
 
-        # Top-down layers
-        self.toplayer1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.toplayer2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-
-        # pure fpn layers
-        # Top layer
-        self.toplayer = nn.Conv2d(2048, 256, kernel_size=1, stride=1, padding=0)
-        self.smooth1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.smooth2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.smooth3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.flatlayer1 = nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)
-        self.flatlayer2 = nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0)
-        self.flatlayer3 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0)
+        # pure fpn layers for keypoint subnet
+        # Lateral layers
+        self.toplayer = nn.Conv2d(2048, 256, kernel_size=1, stride=1, padding=0)  # c5 -> p5
+        self.flatlayer1 = nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)  # c4 -> p4
+        self.flatlayer2 = nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0)  # c3 -> p3
+        self.flatlayer3 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0)  # c2 -> p2
+        # smooth
+        self.smooth1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)  # smooth p4
+        self.smooth2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)  # smooth p3
+        self.smooth3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)  # smooth p2
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -100,7 +103,7 @@ class FPN(nn.Module):
         So we choose bilinear upsample which supports arbitrary output sizes.
         '''
         _,_,H,W = y.size()
-        return F.upsample(x, size=(H,W), mode='bilinear') + y
+        return F.upsample(x, size=(H,W), mode='bilinear', align_corners=False) + y
 
     def forward(self, x):
         # Bottom-up
@@ -113,11 +116,12 @@ class FPN(nn.Module):
         p6 = self.conv6(c5)
         p7 = self.conv7(F.relu(p6))
 
-        # Top-down
+        # pure fpn for detection subnet, RetinaNet
         p5 = self.latlayer1(c5)
         p4 = self._upsample_add(p5, self.latlayer2(c4))
-        p4 = self.toplayer1(p4)
         p3 = self._upsample_add(p4, self.latlayer3(c3))
+        p5 = self.toplayer0(p5)
+        p4 = self.toplayer1(p4)
         p3 = self.toplayer2(p3)
 
         # pure fpn for keypoints estimation

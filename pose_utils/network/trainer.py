@@ -326,7 +326,7 @@ class Trainer(object):
                 break
 
             inputs, gts, _ = self.batch_processor(self, batch)
-            _, saved_for_loss = self.model(*inputs)
+            _, saved_for_loss, _ = self.model(*inputs)
             self.batch_timer.toc()
 
             loss, saved_for_log = self.model.module.build_loss(saved_for_loss, *gts)

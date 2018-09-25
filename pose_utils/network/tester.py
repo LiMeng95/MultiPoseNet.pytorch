@@ -71,7 +71,7 @@ class Tester(object):
             with torch.no_grad():
                 img_input = img_input.cuda(device=self.params.gpus[0])
 
-            heatmaps, _ = self.model(img_input)
+            heatmaps, _, [scores, classification, transformed_anchors] = self.model(img_input)
             heatmaps = heatmaps.cpu().detach().numpy()
             heatmaps = np.squeeze(heatmaps, 0)
             heatmaps = np.transpose(heatmaps, (1, 2, 0))
@@ -80,8 +80,24 @@ class Tester(object):
             # segment_map = heatmaps[:, :, 17]
             param = {'thre1': 0.1, 'thre2': 0.05, 'thre3': 0.5}
             to_plot = plot_heatmap(img_resized, param, heatmaps[:, :, :17])
+
+            # bounding box from retinanet
+            scores = scores.cpu().detach().numpy()
+            classification = classification.cpu().detach().numpy()
+            transformed_anchors = transformed_anchors.cpu().detach().numpy()
+            idxs = np.where(scores > 0.5)
+            for j in range(idxs[0].shape[0]):
+                bbox = transformed_anchors[idxs[0][j], :]
+                x1 = int(bbox[0])
+                y1 = int(bbox[1])
+                x2 = int(bbox[2])
+                y2 = int(bbox[3])
+                cv2.rectangle(img_resized, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+                cv2.putText(img_resized, 'class:' + str(int(classification[idxs[0][j]])), (x1, y1),
+                            cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255), 1)
+
             cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_1heatmap.png'), heatmap_max * 256)
-            # cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_2seg.png'), segment_map * 256)
+            cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_2bbx.png'), img_resized)
             cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_3keypoints.png'), to_plot)
             # cv2.imwrite(os.path.join(self.params.testresult_dir, img_name.split('.', 1)[0] + '_4associations.png'), canvas)
             print('completed...')
@@ -100,7 +116,7 @@ class Tester(object):
             self.data_timer.toc()
 
             inputs, gts, _ = self.batch_processor(self, batch)
-            _, saved_for_loss = self.model(*inputs)
+            _, saved_for_loss, _ = self.model(*inputs)
             self.batch_timer.toc()
 
             loss, saved_for_log = self.model.module.build_loss(saved_for_loss, *gts)
