@@ -19,17 +19,17 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
 - 180930:
   - Add the training code `multipose_detection_train.py` for RetinaNet.  
   - New checkpoint ([Google Drive](https://drive.google.com/file/d/1bW6dH3_fn1_N6UFk79OIkKtW_smdeVpL/view?usp=sharing),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/7328ce2cb7bd4f558a78/), backbone: resnet101)
-  - Add `multipose_keypoint_*.py`and `multipose_detection_*.py`for Keypoint Estimation Subnet and Person Detection Subnet respectively. Remove `multipose_resnet_*.py`,
+  - Add `multipose_keypoint_*.py` and `multipose_detection_*.py` for Keypoint Estimation Subnet and Person Detection Subnet respectively. Remove `multipose_resnet_*.py`.
 
 ### Contents
 
-1. [Requirements](###Requirements)
-2. [Training](###Training)
-3. [Validation](###Validation)
-4. [Inference](###Inference)
-5. [Result](###Result)
-6. [Acknowledgements](###Acknowledgements)
-7. [Citation](###Citation)
+1. [Requirements](#Requirements)
+2. [Training](#Training)
+3. [Validation](#Validation)
+4. [Inference](#Inference)
+5. [Result](#Result)
+6. [Acknowledgements](#Acknowledgements)
+7. [Citation](#Citation)
 
 ### Requirements
 
