@@ -137,9 +137,9 @@ class poseNet(nn.Module):
         self.convs3 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
         self.convs4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
 
-        self.upsample1 = nn.Upsample(scale_factor=8, mode='bilinear', align_corners=True)
-        self.upsample2 = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)
-        self.upsample3 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample1 = nn.Upsample(scale_factor=8, mode='nearest', align_corners=None)
+        self.upsample2 = nn.Upsample(scale_factor=4, mode='nearest', align_corners=None)
+        self.upsample3 = nn.Upsample(scale_factor=2, mode='nearest', align_corners=None)
         # self.upsample4 = nn.Upsample(size=(120,120),mode='bilinear',align_corners=True)
 
         self.concat = Concat()
@@ -164,21 +164,85 @@ class poseNet(nn.Module):
         self.regressionModel.output.weight.data.fill_(0)
         self.regressionModel.output.bias.data.fill_(0)
 
-        # self.freeze_bn()  # from retinanet
+        self.freeze_bn()  # from retinanet
+
+    def _initialize_weights_norm(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init.normal_(m.weight, std=0.01)
+                if m.bias is not None:  # resnet101 conv2d doesn't add bias
+                    init.constant_(m.bias, 0.0)
+
+    def freeze_bn(self):
+        '''Freeze BatchNorm layers.'''
+        for layer in self.modules():
+            if isinstance(layer, nn.BatchNorm2d):
+                layer.eval()
 
     def forward(self, x):
 
-        # if self.training:
-        #     img_batch, annotations = x
-        # else:
-        #     img_batch = x
-        img_batch = x
+        img_batch, subnet_name = x
 
-        saved_for_keypoint_loss = []
+        if subnet_name == 'keypoint_subnet':
+            return self.keypoint_forward(img_batch)
+        elif subnet_name == 'detection_subnet':
+            return self.detection_forward(img_batch)
+        else:  # entire_net
+            features = self.fpn(img_batch)
+            p2, p3, p4, p5 = features[0]  # fpn features for keypoint subnet
+            features = features[1]  # fpn features for keypoint subnet
 
-        features = self.fpn(img_batch)
-        p2, p3, p4, p5 = features[0]  # fpn features for keypoint subnet
-        features = features[1]  # fpn features for keypoint subnet
+            ##################################################################################
+            # keypoints subnet
+            dt5 = self.convt1(p5)
+            d5 = self.convs1(dt5)
+            dt4 = self.convt2(p4)
+            d4 = self.convs2(dt4)
+            dt3 = self.convt3(p3)
+            d3 = self.convs3(dt3)
+            dt2 = self.convt4(p2)
+            d2 = self.convs4(dt2)
+
+            up5 = self.upsample1(d5)
+            up4 = self.upsample2(d4)
+            up3 = self.upsample3(d3)
+
+            concat = self.concat(up5, up4, up3, d2)
+            smooth = F.relu(self.conv2(concat))
+            predict_keypoint = self.convfin(smooth)
+
+            ##################################################################################
+            # detection subnet
+            regression = torch.cat([self.regressionModel(feature) for feature in features], dim=1)
+            classification = torch.cat([self.classificationModel(feature) for feature in features], dim=1)
+            anchors = self.anchors(img_batch)
+
+            transformed_anchors = self.regressBoxes(anchors, regression)
+            transformed_anchors = self.clipBoxes(transformed_anchors, img_batch)
+
+            scores = torch.max(classification, dim=2, keepdim=True)[0]
+
+            scores_over_thresh = (scores > 0.05)[0, :, 0]
+
+            if scores_over_thresh.sum() == 0:
+                # no boxes to NMS, just return
+                return predict_keypoint, [torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)]
+
+            classification = classification[:, scores_over_thresh, :]
+            transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
+            scores = scores[:, scores_over_thresh, :]
+
+            anchors_nms_idx = nms(torch.cat([transformed_anchors, scores], dim=2)[0, :, :], 0.5)  # threshold = 0.5, inpsize=480
+
+            nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(dim=1)
+
+            return predict_keypoint, [nms_scores, nms_class, transformed_anchors[0, anchors_nms_idx, :]]
+
+
+    def keypoint_forward(self, img_batch):
+        saved_for_loss = []
+
+        p2, p3, p4, p5 = self.fpn(img_batch)[0] # fpn features for keypoint subnet
 
         ##################################################################################
         # keypoints subnet
@@ -194,13 +258,18 @@ class poseNet(nn.Module):
         up5 = self.upsample1(d5)
         up4 = self.upsample2(d4)
         up3 = self.upsample3(d3)
-        # up2 = self.upsample4(d2)
 
         concat = self.concat(up5, up4, up3, d2)
         smooth = F.relu(self.conv2(concat))
         predict_keypoint = self.convfin(smooth)
-        saved_for_keypoint_loss.append(predict_keypoint)
-        # predict = F.upsample(predict,scale_factor=4,mode='bilinear',align_corners=True)  ### ???
+        saved_for_loss.append(predict_keypoint)
+
+        return predict_keypoint, saved_for_loss
+
+    def detection_forward(self, img_batch):
+        saved_for_loss = []
+
+        features = self.fpn(img_batch)[1]  # fpn features for detection subnet
 
         ##################################################################################
         # detection subnet
@@ -208,73 +277,74 @@ class poseNet(nn.Module):
         classification = torch.cat([self.classificationModel(feature) for feature in features], dim=1)
         anchors = self.anchors(img_batch)
 
-        if self.training:
-            return predict_keypoint, saved_for_keypoint_loss#, self.focalLoss(classification, regression, anchors, annotations)
-        else:
-            transformed_anchors = self.regressBoxes(anchors, regression)
-            transformed_anchors = self.clipBoxes(transformed_anchors, img_batch)
+        saved_for_loss.append(classification)
+        saved_for_loss.append(regression)
+        saved_for_loss.append(anchors)
 
-            scores = torch.max(classification, dim=2, keepdim=True)[0]
-
-            scores_over_thresh = (scores > 0.05)[0, :, 0]
-
-            if scores_over_thresh.sum() == 0:
-                # no boxes to NMS, just return
-                return predict_keypoint, saved_for_keypoint_loss, [torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)]
-
-            classification = classification[:, scores_over_thresh, :]
-            transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
-            scores = scores[:, scores_over_thresh, :]
-
-            anchors_nms_idx = nms(torch.cat([transformed_anchors, scores], dim=2)[0, :, :], 0.5)
-
-            nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(dim=1)
-
-            return predict_keypoint, saved_for_keypoint_loss, [nms_scores, nms_class,
-                                                               transformed_anchors[0, anchors_nms_idx, :]]
-
-    def _initialize_weights_norm(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                init.normal_(m.weight, std=0.01)
-                if m.bias is not None:  # resnet101 conv2d doesn't add bias
-                    init.constant_(m.bias, 0.0)
+        return [], saved_for_loss
 
     @staticmethod
-    def build_loss(saved_for_loss, heat_temp, heat_weight, batch_size, gpus):
+    def build_loss(saved_for_loss, *args):
 
-        names = build_names()
-        saved_for_log = OrderedDict()
-        criterion = nn.MSELoss(size_average=True).cuda()
-        total_loss = 0
-        div1 = 1.
+        subnet_name = args[0]
 
-        pred1 = saved_for_loss[0] * heat_weight
-        gt1 = heat_weight * heat_temp
+        if subnet_name == 'keypoint_subnet':
+            return build_keypoint_loss(saved_for_loss, args[1], args[2], args[3], args[4])
+        elif subnet_name == 'detection_subnet':
+            return build_detection_loss(saved_for_loss, args[1])
+        else:
+            return 0
 
-        # Compute losses
-        loss1 = criterion(pred1, gt1) / div1
 
-        total_loss += loss1
+def build_keypoint_loss(saved_for_loss, heat_temp, heat_weight, batch_size, gpus):
 
-        # Get value from Variable and save for log
-        saved_for_log[names[0]] = loss1.item()
+    names = build_names()
+    saved_for_log = OrderedDict()
+    criterion = nn.MSELoss(size_average=True).cuda()
+    total_loss = 0
+    div1 = 1.
 
-        saved_for_log['max_ht'] = torch.max(
-            saved_for_loss[-1].data[:, 0:-1, :, :]).item()
-        saved_for_log['min_ht'] = torch.min(
-            saved_for_loss[-1].data[:, 0:-1, :, :]).item()
+    pred1 = saved_for_loss[0] * heat_weight
+    gt1 = heat_weight * heat_temp
 
-        return total_loss, saved_for_log
+    # Compute losses
+    loss1 = criterion(pred1, gt1) / div1
+    total_loss += loss1
 
+    # Get value from Tensor and save for log
+    saved_for_log[names[0]] = loss1.item()
+    saved_for_log['max_ht'] = torch.max(
+        saved_for_loss[-1].data[:, 0:-1, :, :]).item()
+    saved_for_log['min_ht'] = torch.min(
+        saved_for_loss[-1].data[:, 0:-1, :, :]).item()
+
+    return total_loss, saved_for_log
+
+def build_detection_loss(saved_for_loss, anno):
+    '''
+    :param saved_for_loss: [classifications, regressions, anchors]
+    :param anno: annotations
+    :return: classification_loss, regression_loss
+    '''
+    saved_for_log = OrderedDict()
+
+    # Compute losses
+    focalLoss = losses.FocalLoss()
+    classification_loss, regression_loss = focalLoss(*saved_for_loss, anno)
+    classification_loss = classification_loss.mean()
+    regression_loss = regression_loss.mean()
+    total_loss = classification_loss + regression_loss
+
+    # Get value from Tensor and save for log
+    saved_for_log['total_loss'] = total_loss.item()
+    saved_for_log['classification_loss'] = classification_loss.item()
+    saved_for_log['regression_loss'] = regression_loss.item()
+
+    return total_loss, saved_for_log
 
 def build_names():
     names = []
-
     for j in range(1, 2):
         names.append('loss_end%d' % j)
     return names
 
-
-def make_variable(tensor, async=False):
-    return Variable(tensor).cuda(async=async)

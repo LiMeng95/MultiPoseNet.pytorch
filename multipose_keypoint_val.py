@@ -5,24 +5,26 @@ from pose_utils.network.tester import Tester
 
 
 # Hyper-params
-coco_root = '/data/COCO2014/'
+coco_root = '/data/COCO/'
+backbone='resnet101'  # 'resnet50'
 data_dir = coco_root+'images/'
 mask_dir = coco_root
 json_path = coco_root+'COCO.json'
-inp_size = 384  # input size 368
+inp_size = 480  # input size 480*480
 feat_stride = 4
-backbone='resnet101'  # 'resnet50'
 
 # Set Training parameters
 params = Tester.TestParams()
+params.subnet_name = 'keypoint_subnet'
 params.gpus = [0]
-params.ckpt = './extra/models/ckpt_baseline.h5'
-params.batch_size = 10 * len(params.gpus)
+params.ckpt = './extra/models/ckpt_baseline_resnet101.h5'
+params.batch_size = 6 * len(params.gpus)
+params.print_freq = 50
 
 # validation data
 valid_data = get_loader(json_path, data_dir, mask_dir, inp_size,
                         feat_stride, preprocess='resnet', training=False,
-                        batch_size=params.batch_size-4 * len(params.gpus), shuffle=False, num_workers=8)
+                        batch_size=params.batch_size-2 * len(params.gpus), shuffle=False, num_workers=4)
 print('val dataset len: {}'.format(len(valid_data.dataset)))
 
 # model

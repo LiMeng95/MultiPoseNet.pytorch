@@ -136,19 +136,37 @@ def NMS(param, heatmaps, upsampFactor=1., bool_refine_center=True, bool_gaussian
     return joint_list_per_joint_type
 
 
-def plot_heatmap(img_orig, param, heatmaps):
+def get_joint_list(img_orig, param, heatmaps, scale):
 
     joint_list_per_joint_type = NMS(param,
                                     heatmaps, img_orig.shape[0] / float(heatmaps.shape[0]))
 
-    joint_list = np.array([tuple(peak) + (joint_type,) for joint_type,
-                           joint_peaks in enumerate(joint_list_per_joint_type) for peak in joint_peaks])
+    for peaks in joint_list_per_joint_type:
+        peaks[:, :2] = peaks[:, :2]*scale
 
-    to_plot = img_orig.copy()
+    joint_list = np.array([tuple(peak) + (joint_type,) for joint_type, joint_peaks
+                           in enumerate(joint_list_per_joint_type) for peak in joint_peaks])
+
+    return joint_list
+
+
+def plot_result(img_orig, result):
+
+    bbox_list = result['bbox_list']
+    joint_list = result['joint_list']
+
+    plot_bbox = img_orig.copy()
+    plot_joints = img_orig.copy()
+
+    for bbox in bbox_list:
+        x1 = int(bbox[0])
+        y1 = int(bbox[1])
+        x2 = int(bbox[2])
+        y2 = int(bbox[3])
+        cv2.rectangle(plot_bbox, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+        cv2.putText(plot_bbox, 'class:0', (x1, y1), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255), 1)
 
     for joint in joint_list:
-        cv2.circle(to_plot, tuple(joint[0:2].astype(
-            int)), 4, colors[int(joint[-1])], thickness=-1)
+        cv2.circle(plot_joints, (int(joint[0]), int(joint[1])), 4, colors[int(joint[-1])], thickness=-1)
 
-    return to_plot
-
+    return plot_bbox, plot_joints

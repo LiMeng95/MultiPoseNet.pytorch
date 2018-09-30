@@ -43,6 +43,7 @@ def default_visualization_fn(writer, step, log_dict):
 class TrainParams(object):
     # required params
     exp_name = 'experiment_name'
+    subnet_name = 'keypoint_subnet'
     batch_size = 32
     max_epoch = 30
     optimizer = None
@@ -171,6 +172,7 @@ class Trainer(object):
         self.model = ListDataParallel(self.model, device_ids=self.params.gpus)
         self.model = self.model.cuda(self.params.gpus[0])
         self.model.train()
+        self.model.module.freeze_bn()
 
 
     def train(self):
@@ -268,13 +270,6 @@ class Trainer(object):
                 self._print_log(step, self.log_values, title='Training', max_n_batch=self.batch_per_epoch)
                 reset = True
 
-            # validation
-            # if step % self.params.val_freq == 0 and step > 0:
-            #     global_step = step + (self.last_epoch - 1) * self.batch_per_epoch
-            #     val_logs = self._val_nbatch(self.params.val_nbatch, step=step)
-            #     if self.params.use_tensorboard is not None and self.val_writer:
-            #         self.params.visualization_fn(self.val_writer, global_step, meter_to_float(val_logs))
-
             if step % self.params.save_freq_step == 0 and step > 0:
                 save_to = os.path.join(self.params.save_dir,
                                        'ckpt_{}.h5.ckpt'.format((self.last_epoch - 1) * self.batch_per_epoch + step))
@@ -288,26 +283,6 @@ class Trainer(object):
 
         total_loss, std = total_loss.value()
         return total_loss
-
-    # def _val_nbatch(self, n_batch, step=0):
-    #     if self.val_stream is None or n_batch <= 0:
-    #         return
-    #
-    #     training_mode = self.model.training
-    #     self.model.eval()
-    #     logs = OrderedDict()
-    #     for i in range(n_batch):
-    #         batch = next(self.val_stream)
-    #         inputs, gts, _ = self.batch_processor(self, batch)
-    #
-    #         output, saved_for_loss = self.model(*inputs)
-    #         loss, saved_for_log = self.model.module.build_loss(saved_for_loss, *gts)
-    #
-    #         self._process_log(saved_for_log, logs)
-    #     self._print_log(step, logs, title='Validation')
-    #
-    #     self.model.train(mode=training_mode)
-    #     return logs
 
     def _val_one_epoch(self, n_batch):
         training_mode = self.model.training
@@ -326,7 +301,7 @@ class Trainer(object):
                 break
 
             inputs, gts, _ = self.batch_processor(self, batch)
-            _, saved_for_loss, _ = self.model(*inputs)
+            _, saved_for_loss = self.model(*inputs)
             self.batch_timer.toc()
 
             loss, saved_for_log = self.model.module.build_loss(saved_for_loss, *gts)
@@ -342,6 +317,7 @@ class Trainer(object):
         mean, std = sum_loss.value()
         logger.info('Validation loss: mean: {}, std: {}'.format(mean, std))
         self.model.train(mode=training_mode)
+        self.model.module.freeze_bn()
         return mean
 
     def _process_log(self, src_dict, dest_dict):

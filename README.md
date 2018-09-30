@@ -2,22 +2,34 @@
 
 This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04067) ( ECCV 2018, Muhammed Kocabas et al.)
 
-![](./extra/output/keypoints.png)
-
-![](./extra/output/pic1_2bbx.png)
+![](./extra/output/pic1_all.png)
 
 ### To Do
 
 - [x] Keypoint Estimation Subnet for 17 human keypoints annotated in [COCO dataset](http://cocodataset.org/)
 - [ ] Keypoint Estimation Subnet with person segmentation mask and intermediate supervision
-- [ ] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
+- [x] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
 - [ ] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
 
 ### Update
 
 - 180925:
-  - Add Person Detection Subnet (RetinaNet) in `posenet.py`. The RetinaNet checkpoint ([Google Drive](https://drive.google.com/open?id=1qyqimTdb_PJ9Wt0GE2637s8hG262rJ_N), [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/6def4775abd94bb7b84f/), backbone: resnet50) **performs poorly on Keypoint Subnet temporarily**. And we have not yet finished the training code for RetinaNet.
+  - Add Person Detection Subnet (RetinaNet) in `posenet.py`.
   - Add NMS extension in `./lib`.
+- 180930:
+  - Add the training code `multipose_detection_train.py` for RetinaNet.  
+  - New checkpoint ([Google Drive](https://drive.google.com/file/d/1bW6dH3_fn1_N6UFk79OIkKtW_smdeVpL/view?usp=sharing),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/7328ce2cb7bd4f558a78/), backbone: resnet101)
+  - Add `multipose_keypoint_*.py`and `multipose_detection_*.py`for Keypoint Estimation Subnet and Person Detection Subnet respectively. Remove `multipose_resnet_*.py`,
+
+### Contents
+
+1. [Requirements](###Requirements)
+2. [Training](###Training)
+3. [Validation](###Validation)
+4. [Inference](###Inference)
+5. [Result](###Result)
+6. [Acknowledgements](###Acknowledgements)
+7. [Citation](###Citation)
 
 ### Requirements
 
@@ -32,82 +44,90 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
   - ......
 
 - Build the NMS extension
-
-  ```bash
+```bash
   cd ./lib
   bash build.sh
   cd ..
-  ```
+```
 
 #### Data preparation
 
-We followed [ZheC/Realtime_Multi-Person_Pose_Estimation](https://github.com/ZheC/Realtime_Multi-Person_Pose_Estimation)'s first 4 Training Steps prepared our COCO2014 dataset (train2014, val2014 and mask2014), and make them look like this:
+**You can skip this step if you just want to run inference on your own pictures using our baseline checkpoint**
 
-```
+- For Training Keypoint Estimation Subnet, we followed [ZheC/Realtime_Multi-Person_Pose_Estimation](https://github.com/ZheC/Realtime_Multi-Person_Pose_Estimation)'s first 4 Training Steps prepared our COCO2014 dataset (train2014, val2014 and mask2014). 
+- We also use COCO2017 dataset to train Person Detection Subnet.
+
+Make them look like this:
+
+```bash
 ${COCO_ROOT}
+   --annotations
+      --instances_train2017.json
+      --instances_val2017.json
    --images
       --train2014
       --val2014
+      --train2017
+      --val2017
    --mask2014
    --COCO.json
 ```
 
-### Train
+### Training
 
-Train on all training data (82783+40504-2644 = 120643 samples)
-
-- Run:
-  ```python
-  python multipose_resnet_train.py
-  ```
-
-  - Change the Hyper-parameter `coco_root` to your own COCO path.
-  - The trained model will be saved in  `params.save_dir`  folder every epoch.
+- Prepare
+  - Change the hyper-parameter `coco_root` to your own COCO path.
   - You can change the parameter `params.gpus` to define which GPU device you want to use, such as `params.gpus = [0,1,2,3]`. 
+  - The trained model will be saved in  `params.save_dir`  folder every epoch.
+- Run:
+```python
+python multipose_keypoint_train.py  # train keypoint subnet
+python multipose_detection_train.py  # train detection subnet
+```
 
 ### Validation
 
-Run validation on first 2644 of val2014 marked by 'isValidation = 1', as our minval dataset.
-
 - Prepare checkpoint:
-  - Download our baseline model ([Google Drive](https://drive.google.com/file/d/1na9N9HtK9z5TXnRtlIjwku1yHdcdIGS3/view?usp=sharing), [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/b391609440d44a90a381/)) or use your own model.
+  - Download our baseline model ([Google Drive](https://drive.google.com/file/d/1bW6dH3_fn1_N6UFk79OIkKtW_smdeVpL/view?usp=sharing),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/7328ce2cb7bd4f558a78/), backbone: resnet101) or use your own model.
   - Specify the checkpoints file path `params.ckpt` in file `multipose_resnet_val.py`. 
 
 - Run:
-  ```python
-  python multipose_resnet_val.py
-  ```
-  
+```python
+python multipose_keypoint_val.py  # validate keypoint subnet on first 2644 of val2014 marked by 'isValidation = 1', as our minval dataset.
+python multipose_detection_val.py  # validate detection subnet on val2017
+```
+
 ### Inference
 
 Run inference on your own pictures.
 
 - Prepare checkpoint:
-  - Download our baseline model ([Google Drive](https://drive.google.com/file/d/1na9N9HtK9z5TXnRtlIjwku1yHdcdIGS3/view?usp=sharing), [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/b391609440d44a90a381/)) or use your own model.
+  - Download our baseline model ([Google Drive](https://drive.google.com/file/d/1bW6dH3_fn1_N6UFk79OIkKtW_smdeVpL/view?usp=sharing),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/7328ce2cb7bd4f558a78/), backbone: resnet101) or use your own model.
   - Specify the checkpoints file path `params.ckpt` in file `multipose_resnet_test.py`. 
   - Specify the pictures file path `testdata_dir`  and results file path `testresult_dir` in file `multipose_resnet_val.py`. 
 
 - Run:
-  ```python
-  python multipose_resnet_test.py
-  ```
+```python
+python multipose_test.py
+```
 
 ### Result
 
 - Validation loss
 
-| mean |  std  |
-| :------:   | :----:   |
-| 0.0007737 |0.0004432|
+| keypoint mean |  keypoint std  | detection mean |  subnet std  |
+| :------:   | :----:   |:------:   | :----:   |
+| 0.00055 |0.00033|1.09604 |0.37352|
 
 - Inference results
 
 <center class="half">
-<img src="./extra/test_images/pic2.jpg" width="200px" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" width="200px" title="heatmap"/><img src="./extra/output/pic2_2bbx.png" width="200px" title="bounding box"/><img src="./extra/output/pic2_3keypoints.png" width="200px" title="keypoints"/>
+<img src="./extra/test_images/pic2.jpg" width="200px" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" width="200px" title="heatmap"/><img src="./extra/output/pic2_2bbox.png" width="200px" title="bounding box"/><img src="./extra/output/pic2_3keypoints.png" width="200px" title="keypoints"/>
 </center>
 
 
-### Reference
+
+### Acknowledgements
 
 - [@ZheC Realtime_Multi-Person_Pose_Estimation](https://github.com/ZheC/Realtime_Multi-Person_Pose_Estimation) : The first 4 Training Steps to generate our own COCO dataset.
 - Thanks [@IcewineChen](https://github.com/IcewineChen/pytorch-MultiPoseNet) for the implement of `posenet`.
