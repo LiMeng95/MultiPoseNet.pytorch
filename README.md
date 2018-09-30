@@ -23,13 +23,13 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
 
 ### Contents
 
-1. [Requirements](#Requirements)
-2. [Training](#Training)
-3. [Validation](#Validation)
-4. [Inference](#Inference)
-5. [Result](#Result)
-6. [Acknowledgements](#Acknowledgements)
-7. [Citation](#Citation)
+1. [Requirements](#requirements)
+2. [Training](#training)
+3. [Validation](#validation)
+4. [Inference](#inference)
+5. [Result](#result)
+6. [Acknowledgements](#acknowledgements)
+7. [Citation](#citation)
 
 ### Requirements
 
