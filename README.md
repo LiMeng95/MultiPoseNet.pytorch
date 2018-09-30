@@ -115,7 +115,7 @@ python multipose_test.py
 
 - Validation loss
 
-| keypoint mean |  keypoint std  | detection mean |  subnet std  |
+| keypoint subnet mean |  keypoint subnet std  | detection subnet mean |  detection subnet std  |
 | :------:   | :----:   |:------:   | :----:   |
 | 0.00055 |0.00033|1.09604 |0.37352|
 
