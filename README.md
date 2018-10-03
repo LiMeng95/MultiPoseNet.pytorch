@@ -6,12 +6,44 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
 
 ![baseline checkpoint result](./extra/output/pic4_canvas.png)
 
-### To Do
+### Inference
 
-- [x] Keypoint Estimation Subnet for 17 human keypoints annotated in [COCO dataset](http://cocodataset.org/)
-- [ ] Keypoint Estimation Subnet with person segmentation mask and intermediate supervision
-- [x] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
-- [x] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
+Run inference on your own pictures.
+
+- Prepare checkpoint:
+  - Download our baseline model ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
+  - Specify the checkpoints file path `params.ckpt` in file `multipose_test.py`. 
+  - Specify the pictures file path `testdata_dir`  and results file path `testresult_dir` in file `multipose_test.py`. 
+
+- Run:
+```python
+python multipose_test.py  # inference on your own pictures
+python multipose_coco_eval.py  # COCO evaluation
+```
+
+### Result
+
+- mAP (baseline checkpoint, temporarily)
+
+```
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.393
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.633
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.401
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.262
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.586
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.473
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.661
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.492
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.319
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.687
+```
+
+- Inference results
+
+![baseline checkpoint result](./extra/output/pic2_canvas.png)
+
+![baseline checkpoint result](./extra/output/pic3_canvas.png)
+
 
 ### Update
 
@@ -107,44 +139,12 @@ python multipose_detection_val.py  # validate detection subnet on val2017
 python multipose_prn_val.py  # validate PRN subnet on val2017
 ```
 
-### Inference
+### To Do
 
-Run inference on your own pictures.
-
-- Prepare checkpoint:
-  - Download our baseline model ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
-  - Specify the checkpoints file path `params.ckpt` in file `multipose_test.py`. 
-  - Specify the pictures file path `testdata_dir`  and results file path `testresult_dir` in file `multipose_test.py`. 
-
-- Run:
-```python
-python multipose_test.py  # inference on your own pictures
-python multipose_coco_eval.py  # COCO evaluation
-```
-
-### Result
-
-- mAP (baseline checkpoint, temporarily)
-
-```
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.393
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.633
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.401
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.262
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.586
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.473
- Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.661
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.492
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.319
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.687
-```
-
-- Inference results
-
-![baseline checkpoint result](./extra/output/pic2_canvas.png)
-
-![baseline checkpoint result](./extra/output/pic3_canvas.png)
-
+- [x] Keypoint Estimation Subnet for 17 human keypoints annotated in [COCO dataset](http://cocodataset.org/)
+- [ ] Keypoint Estimation Subnet with person segmentation mask and intermediate supervision
+- [x] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
+- [x] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
 
 
 
