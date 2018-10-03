@@ -46,6 +46,7 @@ python multipose_coco_eval.py  # COCO evaluation
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.687
 ```
 
+[![License](https://img.shields.io/github/license/mashape/apistatus.svg)](https://opensource.org/licenses/MIT) 
 
 ### Requirements
 

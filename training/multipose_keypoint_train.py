@@ -53,7 +53,7 @@ params.max_epoch = 50
 params.init_lr = 1.e-4
 params.lr_decay = 0.1
 
-params.gpus = [0]
+params.gpus = [0,1,2,3]
 params.batch_size = 6 * len(params.gpus)
 params.val_nbatch_end_epoch = 400
 
