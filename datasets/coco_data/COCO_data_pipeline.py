@@ -5,10 +5,10 @@ import cv2
 import numpy as np
 
 import torch
-from pose_utils.datasets.coco_data.heatmap import putGaussianMaps
-from pose_utils.datasets.coco_data.ImageAugmentation import (aug_croppad, aug_flip,
+from datasets.coco_data.heatmap import putGaussianMaps
+from datasets.coco_data.ImageAugmentation import (aug_croppad, aug_flip,
                                                   aug_rotate, aug_scale)
-from pose_utils.datasets.coco_data.preprocessing import resnet_preprocess
+from datasets.coco_data.preprocessing import resnet_preprocess
 from torch.utils.data import DataLoader, Dataset
 
 '''

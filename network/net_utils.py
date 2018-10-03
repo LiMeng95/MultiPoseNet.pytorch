@@ -7,7 +7,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-from pose_utils.utils.log import logger
+from lib.utils.log import logger
 
 def set_optimizer_state_devices(state, device_id=None):
     """

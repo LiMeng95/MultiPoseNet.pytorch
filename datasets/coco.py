@@ -1,11 +1,7 @@
-try:
-    import ujson as json
-except ImportError:
-    import json
-
+import json
 from torchvision.transforms import ToTensor
-from pose_utils.datasets.coco_data.COCO_data_pipeline import Cocokeypoints
-from pose_utils.datasets.dataloader import sDataLoader
+from datasets.coco_data.COCO_data_pipeline import Cocokeypoints
+from datasets.dataloader import sDataLoader
 
 
 def get_loader(json_path, data_dir, mask_dir, inp_size, feat_stride, preprocess,

@@ -1,6 +1,6 @@
 from typing import Generator
 from torch.utils.data.dataloader import DataLoader, _DataLoaderIter
-from pose_utils.utils.log import logger
+from lib.utils.log import logger
 
 
 class sDataLoader(DataLoader):

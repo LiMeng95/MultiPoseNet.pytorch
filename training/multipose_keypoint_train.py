@@ -2,13 +2,13 @@ import torch
 import torch.utils.model_zoo as model_zoo
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from batch_processor import batch_processor
+from training.batch_processor import batch_processor
 from network.posenet import poseNet
-from pose_utils.datasets.coco import get_loader
-from pose_utils.network.trainer import Trainer
+from datasets.coco import get_loader
+from training.trainer import Trainer
 
 # Hyper-params
-coco_root = '/data/COCO/'
+coco_root = '/data/coco/'
 backbone = 'resnet101'  # 'resnet50'
 opt = 'adam'
 weight_decay = 0.000
@@ -45,7 +45,7 @@ params = Trainer.TrainParams()
 params.exp_name = 'your_exp_name/'
 params.subnet_name = 'keypoint_subnet'
 # ./extra/models/{}'.format(params.exp_name)
-params.save_dir = './extra/models/{}'.format(params.exp_name)
+params.save_dir = '/extra/tensorboy/models/{}'.format(params.exp_name)
 params.ckpt = None  # None checkpoint file to load
 params.ignore_opt_state = False
 
