@@ -1,15 +1,17 @@
-from network.posenet import poseNet
-from batch_processor import batch_processor
-from pose_utils.network.tester import Tester
-from pose_utils.datasets.coco_data.RetinaNet_data_pipeline import CocoDataset, \
-    collater, Resizer, AspectRatioBasedSampler, Normalizer
-from torchvision import transforms
 from torch.utils.data import DataLoader
+from torchvision import transforms
 
+from batch_processor import batch_processor
+from datasets.coco_data.RetinaNet_data_pipeline import (AspectRatioBasedSampler,
+                                                        CocoDataset,
+                                                        Normalizer, Resizer,
+                                                        collater)
+from network.posenet import poseNet
+from pose_utils.network.tester import Tester
 
 # Hyper-params
 coco_root = '/data/COCO/'
-backbone='resnet101'  # 'resnet50'
+backbone = 'resnet101'  # 'resnet50'
 
 # Set Training parameters
 params = Tester.TestParams()
@@ -22,8 +24,10 @@ params.print_freq = 100
 # validation data
 dataset_val = CocoDataset(coco_root, set_name='val2017',
                           transform=transforms.Compose([Normalizer(), Resizer()]))
-sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=params.batch_size, drop_last=False)
-valid_data = DataLoader(dataset_val, num_workers=3, collate_fn=collater, batch_sampler=sampler_val)
+sampler_val = AspectRatioBasedSampler(
+    dataset_val, batch_size=params.batch_size, drop_last=False)
+valid_data = DataLoader(dataset_val, num_workers=3,
+                        collate_fn=collater, batch_sampler=sampler_val)
 print('val dataset len: {}'.format(len(valid_data.dataset)))
 
 # model

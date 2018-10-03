@@ -1,7 +1,3 @@
-"""MSCOCO Dataloader
-   Thanks to @tensorboy @shuangliu
-"""
-
 try:
     import ujson as json
 except ImportError:
