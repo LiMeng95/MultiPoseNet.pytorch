@@ -359,13 +359,12 @@ def build_keypoint_loss(saved_for_loss, heat_temp, heat_weight, batch_size, gpus
     saved_for_log = OrderedDict()
     criterion = nn.MSELoss(size_average=True).cuda()
     total_loss = 0
-    div1 = 1.
 
     pred1 = saved_for_loss[0] * heat_weight
     gt1 = heat_weight * heat_temp
 
     # Compute losses
-    loss1 = criterion(pred1, gt1) / div1
+    loss1 = criterion(pred1, gt1)
     total_loss += loss1
 
     # Get value from Tensor and save for log

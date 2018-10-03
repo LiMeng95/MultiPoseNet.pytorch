@@ -218,4 +218,6 @@ def get_model_name(cfg):
 
 if __name__ == '__main__':
     import sys
-    gen_config(sys.argv[1])
+    name, full_name = gen_config(sys.argv[1])
+    print(name)
+    print(full_name)
