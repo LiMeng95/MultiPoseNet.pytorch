@@ -42,7 +42,7 @@ json_path = coco_root+'COCO.json'
 
 # Set Training parameters
 params = Trainer.TrainParams()
-params.exp_name = 'your_exp_name/'
+params.exp_name = 'test_whole_pipe/'
 params.subnet_name = 'keypoint_subnet'
 # ./extra/models/{}'.format(params.exp_name)
 params.save_dir = '/extra/tensorboy/models/{}'.format(params.exp_name)

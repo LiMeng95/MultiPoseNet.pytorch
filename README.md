@@ -2,7 +2,7 @@
 
 This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04067) ( ECCV 2018, Muhammed Kocabas et al.)
 
-![baseline checkpoint result](./extra/output/pic3_canvas.png)
+![baseline checkpoint result](./demo/output/pic3_canvas.png)
 
 [![License](https://img.shields.io/github/license/mashape/apistatus.svg)](https://opensource.org/licenses/MIT) 
 

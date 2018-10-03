@@ -1,5 +1,5 @@
 from network.posenet import poseNet
-from pose_utils.network.tester import Tester
+from evaluate.tester import Tester
 
 backbone = 'resnet101'
 
