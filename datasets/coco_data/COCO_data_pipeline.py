@@ -10,6 +10,7 @@ from datasets.coco_data.ImageAugmentation import (aug_croppad, aug_flip,
                                                   aug_rotate, aug_scale)
 from datasets.coco_data.preprocessing import resnet_preprocess
 from torch.utils.data import DataLoader, Dataset
+from functools import partial, reduce
 
 '''
 train2014  : 82783 simages
@@ -222,17 +223,21 @@ class Cocokeypoints(Dataset):
 
         meta_data = self.add_neck(meta_data)
 
-        meta_data, img, mask_miss = aug_scale(
-            meta_data, img, mask_miss, params_transform)
+        augmentations = [
+            partial(aug_meth, params_transform=params_transform)
+            for aug_meth in [
+                aug_scale,
+                aug_rotate,
+                aug_croppad,
+                aug_flip
+            ]
+        ]
 
-        meta_data, img, mask_miss = aug_rotate(
-            meta_data, img, mask_miss, params_transform)
-
-        meta_data, img, mask_miss = aug_croppad(
-            meta_data, img, mask_miss, params_transform)
-
-        meta_data, img, mask_miss = aug_flip(
-            meta_data, img, mask_miss, params_transform)
+        meta_data, img, mask_miss = reduce(
+            lambda md_i_mm, f: f(*md_i_mm),
+            augmentations,
+            (meta_data, img, mask_miss)
+        )
 
         meta_data = self.remove_illegal_joint(meta_data)
 
