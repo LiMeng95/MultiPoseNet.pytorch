@@ -2,11 +2,19 @@
 
 This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04067) ( ECCV 2018, Muhammed Kocabas et al.)
 
-![baseline checkpoint result](./extra/output/pic1_canvas.png)
+![baseline checkpoint result](./extra/output/pic3_canvas.png)
 
-![baseline checkpoint result](./extra/output/pic4_canvas.png)
+### Contents
 
-### Inference
+1. [Requirements](#requirements)
+2. [Training](#training)
+3. [Validation](#validation)
+4. [Demo](#demo)
+5. [Result](#result)
+6. [Acknowledgements](#acknowledgements)
+7. [Citation](#citation)
+
+### Demo
 
 Run inference on your own pictures.
 
@@ -38,36 +46,6 @@ python multipose_coco_eval.py  # COCO evaluation
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.687
 ```
 
-- Inference results
-
-![baseline checkpoint result](./extra/output/pic2_canvas.png)
-
-![baseline checkpoint result](./extra/output/pic3_canvas.png)
-
-
-### Update
-
-- 180925:
-  - Add Person Detection Subnet (RetinaNet) in `posenet.py`.
-  - Add NMS extension in `./lib`.
-- 180930:
-  - Add the training code `multipose_detection_train.py` for RetinaNet.  
-  - Add `multipose_keypoint_*.py` and `multipose_detection_*.py` for Keypoint Estimation Subnet and Person Detection Subnet respectively. Remove `multipose_resnet_*.py`.
-
-- 1801003:
-  - Add the training code `multipose_prn_train.py` for PRN.  
-  - Add `multipose_coco_eval.py` for COCO evaluation.
-  - New checkpoint ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101), **it performs poorly on COCO evaluation temporarily**
-
-### Contents
-
-1. [Requirements](#requirements)
-2. [Training](#training)
-3. [Validation](#validation)
-4. [Inference](#inference)
-5. [Result](#result)
-6. [Acknowledgements](#acknowledgements)
-7. [Citation](#citation)
 
 ### Requirements
 
@@ -146,6 +124,19 @@ python multipose_prn_val.py  # validate PRN subnet on val2017
 - [x] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
 - [x] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
 
+### Update
+
+- 180925:
+  - Add Person Detection Subnet (RetinaNet) in `posenet.py`.
+  - Add NMS extension in `./lib`.
+- 180930:
+  - Add the training code `multipose_detection_train.py` for RetinaNet.  
+  - Add `multipose_keypoint_*.py` and `multipose_detection_*.py` for Keypoint Estimation Subnet and Person Detection Subnet respectively. Remove `multipose_resnet_*.py`.
+
+- 1801003:
+  - Add the training code `multipose_prn_train.py` for PRN.  
+  - Add `multipose_coco_eval.py` for COCO evaluation.
+  - New checkpoint ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101), **it performs poorly on COCO evaluation temporarily**
 
 
 ### Acknowledgements
