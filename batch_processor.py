@@ -9,7 +9,7 @@ import torch
 
 def batch_processor(state, batch):
     gpus = state.params.gpus
-    subnet_name = state.params.subnet_name  # 'detection_subnet'/'keypoint_subnet'
+    subnet_name = state.params.subnet_name  # 'detection_subnet'/'keypoint_subnet'/'prn_subnet'
 
     if subnet_name == 'keypoint_subnet':
         inp, heat_temp, heat_weight = batch
@@ -27,7 +27,7 @@ def batch_processor(state, batch):
         inputs = [[input_var, subnet_name]]
         gts = [subnet_name, heat_temp_var, heat_weight_var, state.params.batch_size, gpus]
         saved_for_eval = []
-    else:  #'detection_subnet'
+    elif subnet_name == 'detection_subnet':  #'detection_subnet'
         sample = batch#{'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale}
         inp = sample['img']
         anno = sample['annot']  # [x1, y1, x2, y2, category_id]
@@ -39,6 +39,20 @@ def batch_processor(state, batch):
         else:
             input_var = inp.cuda(device=gpus[0])
             anno_var = anno.cuda(device=gpus[0])
+
+        inputs = [[input_var, subnet_name]]
+        gts = [subnet_name, anno_var]
+        saved_for_eval = []
+    else:  #'prn_subnet'
+        inp, label = batch  # input, label
+
+        if not state.model.training:  # used for inference
+            with torch.no_grad():
+                input_var = inp.cuda(device=gpus[0]).float()
+                anno_var = label.cuda(device=gpus[0]).float()
+        else:
+            input_var = inp.cuda(device=gpus[0]).float()
+            anno_var = label.cuda(device=gpus[0]).float()
 
         inputs = [[input_var, subnet_name]]
         gts = [subnet_name, anno_var]

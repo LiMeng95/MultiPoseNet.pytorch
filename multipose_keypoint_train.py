@@ -29,6 +29,7 @@ fpn_keypoint_para = ['toplayer', 'flatlayer1', 'flatlayer2', 'flatlayer3', 'smoo
 retinanet_para = ['regressionModel', 'classificationModel']
 keypoint_para = ['convt1', 'convt2', 'convt3', 'convt4', 'convs1', 'convs2', 'convs3', 'convs4', 'upsample1',
                  'upsample2', 'upsample3', 'conv2', 'convfin']
+prn_para = ['prn']
 
 #####################################################################
 # train keypoint subnet
@@ -71,6 +72,10 @@ for name, module in model.fpn.named_children():
             para.requires_grad = False
 for name, module in model.named_children():
     if name in retinanet_para:
+        for para in module.parameters():
+            para.requires_grad = False
+for name, module in model.named_children():
+    if name in prn_para:
         for para in module.parameters():
             para.requires_grad = False
 

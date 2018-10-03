@@ -9,10 +9,9 @@ params.subnet_name = 'both'
 params.inp_size = 480  # input picture size = (inp_size, inp_size)
 params.coeff = 2
 params.in_thres = 0.21
-params.testdata_dir = './extra/test_images/'  # '/home/f305c/Documents/dataset/COCO2017/images/val2017/'
-params.testresult_dir = './extra/output/'
-params.testresult_write_image = True  # Whether to write result pictures
+params.coco_root = '/data/COCO/'
 params.testresult_write_json = False  # Whether to write json result
+params.coco_result_filename = './extra/multipose_coco2017_results.json'
 params.ckpt = './extra/models/ckpt_baseline_resnet101.h5'
 
 # model
@@ -22,4 +21,4 @@ elif backbone == 'resnet50':
     model = poseNet(50)
 
 tester = Tester(model, params)
-tester.test()  # pic_test
+tester.coco_eval()  # pic_test

@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-# keypoint subnet + detection subnet(RetinaNet)
+# keypoint subnet + detection subnet(RetinaNet) + PRN
 import math
 import torch
 import torch.nn as nn
@@ -117,8 +117,42 @@ class ClassificationModel(nn.Module):
         return out2.contiguous().view(x.shape[0], -1, self.num_classes)
 
 
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
+
+class Add(nn.Module):
+    def forward(self, input1, input2):
+        return torch.add(input1, input2)
+
+
+class PRN(nn.Module):
+    def __init__(self,node_count, coeff):
+        super(PRN, self).__init__()
+        self.flatten   = Flatten()
+        self.height    = coeff*28
+        self.width     = coeff*18
+        self.dens1     = nn.Linear(self.height*self.width*17, node_count)
+        self.bneck     = nn.Linear(node_count, node_count)
+        self.dens2     = nn.Linear(node_count, self.height*self.width*17)
+        self.drop      = nn.Dropout()
+        self.add       = Add()
+        self.softmax   = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        res = self.flatten(x)
+        out = self.drop(F.relu(self.dens1(res)))
+        out = self.drop(F.relu(self.bneck(out)))
+        out = F.relu(self.dens2(out))
+        out = self.add(out, res)
+        out = self.softmax(out)
+        out = out.view(out.size()[0], self.height, self.width, 17)
+
+        return out
+
 class poseNet(nn.Module):
-    def __init__(self, layers):
+    def __init__(self, layers, prn_node_count=1024, prn_coeff=2):
         super(poseNet, self).__init__()
         if layers == 101:
             self.fpn = FPN101()
@@ -156,6 +190,10 @@ class poseNet(nn.Module):
         self.focalLoss = losses.FocalLoss()
 
         ##################################################################################
+        # prn subnet
+        self.prn = PRN(prn_node_count, prn_coeff)
+
+        ##################################################################################
         # initialize weights
         self._initialize_weights_norm()
         prior = 0.01
@@ -187,6 +225,8 @@ class poseNet(nn.Module):
             return self.keypoint_forward(img_batch)
         elif subnet_name == 'detection_subnet':
             return self.detection_forward(img_batch)
+        elif subnet_name == 'prn_subnet':
+            return self.prn_forward(img_batch)
         else:  # entire_net
             features = self.fpn(img_batch)
             p2, p3, p4, p5 = features[0]  # fpn features for keypoint subnet
@@ -283,6 +323,21 @@ class poseNet(nn.Module):
 
         return [], saved_for_loss
 
+    def prn_forward(self, img_batch):
+        saved_for_loss = []
+
+        res = self.prn.flatten(img_batch)
+        out = self.prn.drop(F.relu(self.prn.dens1(res)))
+        out = self.prn.drop(F.relu(self.prn.bneck(out)))
+        out = F.relu(self.prn.dens2(out))
+        out = self.prn.add(out,res)
+        out = self.prn.softmax(out)
+        out = out.view(out.size()[0], self.prn.height, self.prn.width, 17)
+
+        saved_for_loss.append(out)
+
+        return out, saved_for_loss
+
     @staticmethod
     def build_loss(saved_for_loss, *args):
 
@@ -292,6 +347,8 @@ class poseNet(nn.Module):
             return build_keypoint_loss(saved_for_loss, args[1], args[2], args[3], args[4])
         elif subnet_name == 'detection_subnet':
             return build_detection_loss(saved_for_loss, args[1])
+        elif subnet_name == 'prn_subnet':
+            return build_prn_loss(saved_for_loss, args[1])
         else:
             return 0
 
@@ -339,6 +396,26 @@ def build_detection_loss(saved_for_loss, anno):
     saved_for_log['total_loss'] = total_loss.item()
     saved_for_log['classification_loss'] = classification_loss.item()
     saved_for_log['regression_loss'] = regression_loss.item()
+
+    return total_loss, saved_for_log
+
+def build_prn_loss(saved_for_loss, label):
+    '''
+    :param saved_for_loss: [out]
+    :param label: label
+    :return: prn loss
+    '''
+    saved_for_log = OrderedDict()
+
+    criterion = nn.BCELoss(size_average=True).cuda()
+    total_loss = 0
+
+    # Compute losses
+    loss1 = criterion(saved_for_loss[0], label)
+    total_loss += loss1
+
+    # Get value from Tensor and save for log
+    saved_for_log['PRN loss'] = loss1.item()
 
     return total_loss, saved_for_log
 

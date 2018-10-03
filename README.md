@@ -2,14 +2,16 @@
 
 This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04067) ( ECCV 2018, Muhammed Kocabas et al.)
 
-![](./extra/output/pic1_all.png)
+![baseline checkpoint result](./extra/output/pic1_canvas.png)
+
+![baseline checkpoint result](./extra/output/pic4_canvas.png)
 
 ### To Do
 
 - [x] Keypoint Estimation Subnet for 17 human keypoints annotated in [COCO dataset](http://cocodataset.org/)
 - [ ] Keypoint Estimation Subnet with person segmentation mask and intermediate supervision
 - [x] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
-- [ ] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
+- [x] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
 
 ### Update
 
@@ -18,8 +20,12 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
   - Add NMS extension in `./lib`.
 - 180930:
   - Add the training code `multipose_detection_train.py` for RetinaNet.  
-  - New checkpoint ([Google Drive](https://drive.google.com/file/d/1bW6dH3_fn1_N6UFk79OIkKtW_smdeVpL/view?usp=sharing),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/7328ce2cb7bd4f558a78/), backbone: resnet101)
   - Add `multipose_keypoint_*.py` and `multipose_detection_*.py` for Keypoint Estimation Subnet and Person Detection Subnet respectively. Remove `multipose_resnet_*.py`.
+
+- 1801003:
+  - Add the training code `multipose_prn_train.py` for PRN.  
+  - Add `multipose_coco_eval.py` for COCO evaluation.
+  - New checkpoint ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101), **it performs poorly on COCO evaluation temporarily**
 
 ### Contents
 
@@ -64,6 +70,8 @@ ${COCO_ROOT}
    --annotations
       --instances_train2017.json
       --instances_val2017.json
+      --person_keypoints_train2017.json
+      --person_keypoints_val2017.json
    --images
       --train2014
       --val2014
@@ -83,18 +91,20 @@ ${COCO_ROOT}
 ```python
 python multipose_keypoint_train.py  # train keypoint subnet
 python multipose_detection_train.py  # train detection subnet
+python multipose_prn_train.py  # train PRN subnet
 ```
 
 ### Validation
 
 - Prepare checkpoint:
-  - Download our baseline model ([Google Drive](https://drive.google.com/file/d/1bW6dH3_fn1_N6UFk79OIkKtW_smdeVpL/view?usp=sharing),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/7328ce2cb7bd4f558a78/), backbone: resnet101) or use your own model.
-  - Specify the checkpoints file path `params.ckpt` in file `multipose_resnet_val.py`. 
+  - Download our baseline model ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
+  - Specify the checkpoints file path `params.ckpt` in file `multipose_*_val.py`. 
 
 - Run:
 ```python
 python multipose_keypoint_val.py  # validate keypoint subnet on first 2644 of val2014 marked by 'isValidation = 1', as our minval dataset.
 python multipose_detection_val.py  # validate detection subnet on val2017
+python multipose_prn_val.py  # validate PRN subnet on val2017
 ```
 
 ### Inference
@@ -102,28 +112,39 @@ python multipose_detection_val.py  # validate detection subnet on val2017
 Run inference on your own pictures.
 
 - Prepare checkpoint:
-  - Download our baseline model ([Google Drive](https://drive.google.com/file/d/1bW6dH3_fn1_N6UFk79OIkKtW_smdeVpL/view?usp=sharing),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/7328ce2cb7bd4f558a78/), backbone: resnet101) or use your own model.
-  - Specify the checkpoints file path `params.ckpt` in file `multipose_resnet_test.py`. 
-  - Specify the pictures file path `testdata_dir`  and results file path `testresult_dir` in file `multipose_resnet_val.py`. 
+  - Download our baseline model ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
+  - Specify the checkpoints file path `params.ckpt` in file `multipose_test.py`. 
+  - Specify the pictures file path `testdata_dir`  and results file path `testresult_dir` in file `multipose_test.py`. 
 
 - Run:
 ```python
-python multipose_test.py
+python multipose_test.py  # inference on your own pictures
+python multipose_coco_eval.py  # COCO evaluation
 ```
 
 ### Result
 
-- Validation loss
+- mAP (baseline checkpoint, temporarily)
 
-| keypoint subnet mean |  keypoint subnet std  | detection subnet mean |  detection subnet std  |
-| :------:   | :----:   |:------:   | :----:   |
-| 0.00055 |0.00033|1.09604 |0.37352|
+```
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.393
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.633
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.401
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.262
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.586
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.473
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.661
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.492
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.319
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.687
+```
 
 - Inference results
 
-<center class="half">
-<img src="./extra/test_images/pic2.jpg" width="200px" title="pic2"/><img src="./extra/output/pic2_1heatmap.png" width="200px" title="heatmap"/><img src="./extra/output/pic2_2bbox.png" width="200px" title="bounding box"/><img src="./extra/output/pic2_3keypoints.png" width="200px" title="keypoints"/>
-</center>
+![baseline checkpoint result](./extra/output/pic2_canvas.png)
+
+![baseline checkpoint result](./extra/output/pic3_canvas.png)
+
 
 
 

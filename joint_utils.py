@@ -1,4 +1,5 @@
 import cv2
+import math
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure
@@ -10,7 +11,8 @@ colors = [
     [85, 255, 0], [0, 255, 0], [0, 255, 85], [0, 255, 170], [0, 255, 255],
     [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], [170, 0, 255],
     [255, 0, 255], [255, 0, 170], [255, 0, 85], [255, 0, 0]]
-
+limbSeq = [[0,1], [1,2], [2,3], [0,4], [4,5], [5,6], [0,7], [7,8], [8,9], [0,10], [10,11], [11,12], \
+           [0,13], [13,15], [0,14],[14,16]]
 NUM_JOINTS = 17
 
 
@@ -150,23 +152,51 @@ def get_joint_list(img_orig, param, heatmaps, scale):
     return joint_list
 
 
+def draw(canvas, joints, bbox):
+
+    x1 = int(bbox[0])
+    y1 = int(bbox[1])
+    x2 = int(bbox[0]+bbox[2])
+    y2 = int(bbox[1]+bbox[3])
+    cv2.rectangle(canvas, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+
+    for i in range(17):
+        if int(joints[i][2]) == 0:
+            continue
+        x = int(joints[i][0])
+        y = int(joints[i][1])
+        cv2.circle(canvas, (x, y), 4, colors[i], thickness=-1)
+
+    #     cur_canvas = canvas.copy()
+    stickwidth = 2
+    for i in range(16):
+        if joints[limbSeq[i][0]][2] == 0 or joints[limbSeq[i][1]][2] == 0:
+            continue
+        X = (int(joints[limbSeq[i][0]][0]), int(joints[limbSeq[i][1]][0]))
+        Y = (int(joints[limbSeq[i][0]][1]), int(joints[limbSeq[i][1]][1]))
+        mX = np.mean(X)
+        mY = np.mean(Y)
+        length = ((X[0] - X[1]) ** 2 + (Y[0] - Y[1]) ** 2) ** 0.5
+        angle = math.degrees(math.atan2(Y[0] - Y[1], X[0] - X[1]))
+        polygon = cv2.ellipse2Poly((int(mX), int(mY)), (int(length / 2), stickwidth), int(angle), 0, 360, 1)
+        cv2.fillConvexPoly(canvas, polygon, colors[i])
+
+    return canvas
+
 def plot_result(img_orig, result):
 
-    bbox_list = result['bbox_list']
-    joint_list = result['joint_list']
+    for idx, person_data in enumerate(result):
 
-    plot_bbox = img_orig.copy()
-    plot_joints = img_orig.copy()
+        bbox = person_data['bbox']
+        keypoints = person_data['keypoints']
 
-    for bbox in bbox_list:
-        x1 = int(bbox[0])
-        y1 = int(bbox[1])
-        x2 = int(bbox[2])
-        y2 = int(bbox[3])
-        cv2.rectangle(plot_bbox, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
-        cv2.putText(plot_bbox, 'class:0', (x1, y1), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255), 1)
+        x = keypoints[0::3]
+        y = keypoints[1::3]
+        v = keypoints[2::3]
 
-    for joint in joint_list:
-        cv2.circle(plot_joints, (int(joint[0]), int(joint[1])), 4, colors[int(joint[-1])], thickness=-1)
+        joints = []
+        for i in range(len(x)):
+            joints.append([x[i], y[i], v[i]])
 
-    return plot_bbox, plot_joints
+        img_orig = draw(img_orig, joints, bbox)
+    return img_orig
