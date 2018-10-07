@@ -7,16 +7,17 @@ import numpy as np
 from collections import OrderedDict
 import shutil
 
+#import encoding
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau, _LRScheduler
 from torch.optim.optimizer import Optimizer
 
-from pose_utils.utils.log import logger
-from pose_utils.utils.timer import Timer
-from pose_utils.utils.path import mkdir
-import pose_utils.utils.meter as meter_utils
-import pose_utils.network.net_utils as net_utils
-from pose_utils.network.data_parallel import ListDataParallel
+from lib.utils.log import logger
+from lib.utils.timer import Timer
+from lib.utils.path import mkdir
+import lib.utils.meter as meter_utils
+import network.net_utils as net_utils
+from datasets.data_parallel import ListDataParallel
 
 
 def get_learning_rates(optimizer):
@@ -149,7 +150,7 @@ class Trainer(object):
         self.data_timer = Timer()
 
         # load model
-        self.model = model
+        #self.model = model
         ckpt = self.params.ckpt
         if not self.params.save_dir:
             self.params.save_dir = os.path.join('outputs', self.params.exp_name)
@@ -165,11 +166,9 @@ class Trainer(object):
         if ckpt is not None and not self.params.re_init:
            self._load_ckpt(ckpt)
            logger.info('Load ckpt from {}'.format(ckpt))
-        #elif hasattr(self.model, 'init_weight'):
-        #    self.model.init_weight()
-        #    logger.info("Re-init model weight")
 
-        self.model = ListDataParallel(self.model, device_ids=self.params.gpus)
+
+        self.model = ListDataParallel(model, device_ids=self.params.gpus)
         self.model = self.model.cuda(self.params.gpus[0])
         self.model.train()
         self.model.module.freeze_bn()

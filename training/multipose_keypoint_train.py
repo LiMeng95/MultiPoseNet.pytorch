@@ -1,14 +1,15 @@
 import torch
 import torch.utils.model_zoo as model_zoo
-from pose_utils.datasets.coco import get_loader
-from pose_utils.network.trainer import Trainer
-from network.posenet import poseNet
-from batch_processor import batch_processor
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+from training.batch_processor import batch_processor
+from network.posenet import poseNet
+from datasets.coco import get_loader
+from training.trainer import Trainer
+
 # Hyper-params
-coco_root = '/data/COCO/'
-backbone='resnet101'  # 'resnet50'
+coco_root = '/data/coco/'
+backbone = 'resnet101'  # 'resnet50'
 opt = 'adam'
 weight_decay = 0.000
 inp_size = 480  # input size 480*480
@@ -24,8 +25,10 @@ model_urls = {
 
 # model parameters in MultiPoseNet
 fpn_resnet_para = ['conv1', 'bn1', 'layer1', 'layer2', 'layer3', 'layer4']
-fpn_retinanet_para = ['conv6', 'conv7', 'latlayer1', 'latlayer2', 'latlayer3', 'toplayer0', 'toplayer1', 'toplayer2']
-fpn_keypoint_para = ['toplayer', 'flatlayer1', 'flatlayer2', 'flatlayer3', 'smooth1', 'smooth2', 'smooth3']
+fpn_retinanet_para = ['conv6', 'conv7', 'latlayer1', 'latlayer2',
+                      'latlayer3', 'toplayer0', 'toplayer1', 'toplayer2']
+fpn_keypoint_para = ['toplayer', 'flatlayer1', 'flatlayer2',
+                     'flatlayer3', 'smooth1', 'smooth2', 'smooth3']
 retinanet_para = ['regressionModel', 'classificationModel']
 keypoint_para = ['convt1', 'convt2', 'convt3', 'convt4', 'convs1', 'convs2', 'convs3', 'convs4', 'upsample1',
                  'upsample2', 'upsample3', 'conv2', 'convfin']
@@ -39,17 +42,18 @@ json_path = coco_root+'COCO.json'
 
 # Set Training parameters
 params = Trainer.TrainParams()
-params.exp_name = 'your_exp_name/'
+params.exp_name = 'test_whole_pipe/'
 params.subnet_name = 'keypoint_subnet'
-params.save_dir = './extra/models/{}'.format(params.exp_name) #./extra/models/{}'.format(params.exp_name)
-params.ckpt = None  #None checkpoint file to load
+# ./extra/models/{}'.format(params.exp_name)
+params.save_dir = '/extra/tensorboy/models/{}'.format(params.exp_name)
+params.ckpt = None  # None checkpoint file to load
 params.ignore_opt_state = False
 
 params.max_epoch = 50
 params.init_lr = 1.e-4
 params.lr_decay = 0.1
 
-params.gpus = [0]
+params.gpus = [0,1,2,3]
 params.batch_size = 6 * len(params.gpus)
 params.val_nbatch_end_epoch = 400
 
@@ -63,7 +67,8 @@ elif backbone == 'resnet50':
 
 # load pretrained
 if params.ckpt is None:
-    model.fpn.load_state_dict(model_zoo.load_url(model_urls[backbone]), strict=False)
+    model.fpn.load_state_dict(model_zoo.load_url(
+        model_urls[backbone]), strict=False)
 
 # Train Key-point Subnet, Fix the weights in detection subnet (RetinaNet)
 for name, module in model.fpn.named_children():
@@ -101,6 +106,7 @@ if opt == 'adam':
     params.optimizer = torch.optim.Adam(
         trainable_vars, lr=params.init_lr, weight_decay=weight_decay)
 
-params.lr_scheduler = ReduceLROnPlateau(params.optimizer, 'min', factor=params.lr_decay, patience=3, verbose=True)
+params.lr_scheduler = ReduceLROnPlateau(
+    params.optimizer, 'min', factor=params.lr_decay, patience=3, verbose=True)
 trainer = Trainer(model, params, batch_processor, train_data, valid_data)
 trainer.train()

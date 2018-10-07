@@ -7,17 +7,17 @@ import datetime
 import numpy as np
 import json
 from collections import OrderedDict
-from joint_utils import get_joint_list, plot_result
+from network.joint_utils import get_joint_list, plot_result
 from tqdm import tqdm
 
 import torch
 import torch.nn as nn
-from pose_utils.utils.log import logger
-import pose_utils.utils.meter as meter_utils
-import pose_utils.network.net_utils as net_utils
-from pose_utils.utils.timer import Timer
-from pose_utils.datasets.coco_data.preprocessing import resnet_preprocess
-from pose_utils.datasets.coco_data.prn_gaussian import gaussian, crop
+from lib.utils.log import logger
+import lib.utils.meter as meter_utils
+import network.net_utils as net_utils
+from lib.utils.timer import Timer
+from datasets.coco_data.preprocessing import resnet_preprocess
+from datasets.coco_data.prn_gaussian import gaussian, crop
 
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval

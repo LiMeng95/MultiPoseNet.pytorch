@@ -1,7 +1,7 @@
 import os
 from network.posenet import poseNet
 from pycocotools.coco import COCO
-from pose_utils.datasets.coco_data.prn_data_pipeline import PRN_CocoDataset
+from datasets.coco_data.prn_data_pipeline import PRN_CocoDataset
 from torch.utils.data import DataLoader
 from batch_processor import batch_processor
 from pose_utils.network.tester import Tester
