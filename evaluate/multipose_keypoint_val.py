@@ -1,10 +1,15 @@
-from batch_processor import batch_processor
+import os, sys
+root_path = os.path.realpath(__file__).split('/evaluate/multipose_keypoint_val.py')[0]
+os.chdir(root_path)
+sys.path.append(root_path)
+
+from training.batch_processor import batch_processor
 from network.posenet import poseNet
-from pose_utils.datasets.coco import get_loader
-from pose_utils.network.tester import Tester
+from datasets.coco import get_loader
+from evaluate.tester import Tester
 
 # Hyper-params
-coco_root = '/data/coco/'
+coco_root = '/data/COCO/'
 backbone = 'resnet101'  # 'resnet50'
 data_dir = coco_root+'images/'
 mask_dir = coco_root
@@ -16,7 +21,7 @@ feat_stride = 4
 params = Tester.TestParams()
 params.subnet_name = 'keypoint_subnet'
 params.gpus = [0]
-params.ckpt = '/home/tensorboy/Downloads/ckpt_baseline_resnet101_1.h5'
+params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
 params.batch_size = 6 * len(params.gpus)
 params.print_freq = 50
 

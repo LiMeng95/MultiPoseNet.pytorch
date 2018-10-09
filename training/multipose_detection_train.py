@@ -1,15 +1,20 @@
+import os, sys
+root_path = os.path.realpath(__file__).split('/training/multipose_detection_train.py')[0]
+os.chdir(root_path)
+sys.path.append(root_path)
+
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from batch_processor import batch_processor
+from training.batch_processor import batch_processor
 from datasets.coco_data.RetinaNet_data_pipeline import (AspectRatioBasedSampler,
                                                         Augmenter, CocoDataset,
                                                         Normalizer, Resizer,
                                                         collater)
 from network.posenet import poseNet
-from pose_utils.network.trainer import Trainer
+from training.trainer import Trainer
 
 # Hyper-params
 coco_root = '/data/COCO/'
@@ -34,7 +39,7 @@ params = Trainer.TrainParams()
 params.exp_name = 'res101_detection/'
 params.subnet_name = 'detection_subnet'
 params.save_dir = './extra/models/{}'.format(params.exp_name)
-params.ckpt = './extra/models/ckpt_baseline_resnet101.h5'
+params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
 params.ignore_opt_state = True
 
 params.max_epoch = 50

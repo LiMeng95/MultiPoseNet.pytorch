@@ -1,3 +1,8 @@
+import os, sys
+root_path = os.path.realpath(__file__).split('/training/multipose_keypoint_train.py')[0]
+os.chdir(root_path)
+sys.path.append(root_path)
+
 import torch
 import torch.utils.model_zoo as model_zoo
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -8,7 +13,7 @@ from datasets.coco import get_loader
 from training.trainer import Trainer
 
 # Hyper-params
-coco_root = '/data/coco/'
+coco_root = '/data/COCO/'
 backbone = 'resnet101'  # 'resnet50'
 opt = 'adam'
 weight_decay = 0.000
@@ -44,8 +49,7 @@ json_path = coco_root+'COCO.json'
 params = Trainer.TrainParams()
 params.exp_name = 'test_whole_pipe/'
 params.subnet_name = 'keypoint_subnet'
-# ./extra/models/{}'.format(params.exp_name)
-params.save_dir = '/extra/tensorboy/models/{}'.format(params.exp_name)
+params.save_dir = './extra/models/{}'.format(params.exp_name)
 params.ckpt = None  # None checkpoint file to load
 params.ignore_opt_state = False
 
@@ -53,9 +57,9 @@ params.max_epoch = 50
 params.init_lr = 1.e-4
 params.lr_decay = 0.1
 
-params.gpus = [0,1,2,3]
+params.gpus = [0]
 params.batch_size = 6 * len(params.gpus)
-params.val_nbatch_end_epoch = 400
+params.val_nbatch_end_epoch = 1000
 
 params.print_freq = 50
 

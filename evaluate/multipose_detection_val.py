@@ -1,13 +1,18 @@
+import os, sys
+root_path = os.path.realpath(__file__).split('/evaluate/multipose_detection_val.py')[0]
+os.chdir(root_path)
+sys.path.append(root_path)
+
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from batch_processor import batch_processor
+from training.batch_processor import batch_processor
 from datasets.coco_data.RetinaNet_data_pipeline import (AspectRatioBasedSampler,
                                                         CocoDataset,
                                                         Normalizer, Resizer,
                                                         collater)
 from network.posenet import poseNet
-from pose_utils.network.tester import Tester
+from evaluate.tester import Tester
 
 # Hyper-params
 coco_root = '/data/COCO/'
@@ -17,7 +22,7 @@ backbone = 'resnet101'  # 'resnet50'
 params = Tester.TestParams()
 params.subnet_name = 'detection_subnet'
 params.gpus = [0]
-params.ckpt = './extra/models/ckpt_baseline_resnet101.h5'
+params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
 params.batch_size = 1 * len(params.gpus)
 params.print_freq = 100
 

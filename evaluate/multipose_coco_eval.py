@@ -1,3 +1,8 @@
+import os, sys
+root_path = os.path.realpath(__file__).split('/evaluate/multipose_coco_eval.py')[0]
+os.chdir(root_path)
+sys.path.append(root_path)
+
 from network.posenet import poseNet
 from evaluate.tester import Tester
 
@@ -11,8 +16,8 @@ params.coeff = 2
 params.in_thres = 0.21
 params.coco_root = '/data/COCO/'
 params.testresult_write_json = False  # Whether to write json result
-params.coco_result_filename = './extra/multipose_coco2017_results.json'
-params.ckpt = './extra/models/ckpt_baseline_resnet101.h5'
+params.coco_result_filename = './demo/multipose_coco2017_results.json'
+params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
 
 # model
 if backbone == 'resnet101':

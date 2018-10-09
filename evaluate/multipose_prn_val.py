@@ -1,10 +1,14 @@
-import os
+import os, sys
+root_path = os.path.realpath(__file__).split('/evaluate/multipose_prn_val.py')[0]
+os.chdir(root_path)
+sys.path.append(root_path)
+
 from network.posenet import poseNet
 from pycocotools.coco import COCO
 from datasets.coco_data.prn_data_pipeline import PRN_CocoDataset
 from torch.utils.data import DataLoader
-from batch_processor import batch_processor
-from pose_utils.network.tester import Tester
+from training.batch_processor import batch_processor
+from evaluate.tester import Tester
 
 
 # Hyper-params
@@ -21,7 +25,7 @@ num_of_keypoints = 3  # Minimum number of keypoints for each bbox in training
 params = Tester.TestParams()
 params.subnet_name = 'prn_subnet'
 params.gpus = [0]
-params.ckpt = './extra/models/ckpt_baseline_resnet101.h5'
+params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
 params.batch_size = 8 * len(params.gpus)
 params.print_freq = 500
 

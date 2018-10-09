@@ -27,8 +27,8 @@ Run inference on your own pictures.
 
 - Run:
 ```python
-python multipose_test.py  # inference on your own pictures
-python multipose_coco_eval.py  # COCO evaluation
+python ./evaluate/multipose_test.py  # inference on your own pictures
+python ./evaluate/multipose_coco_eval.py  # COCO evaluation
 ```
 
 ### Result
@@ -100,9 +100,9 @@ ${COCO_ROOT}
   - The trained model will be saved in  `params.save_dir`  folder every epoch.
 - Run:
 ```python
-python multipose_keypoint_train.py  # train keypoint subnet
-python multipose_detection_train.py  # train detection subnet
-python multipose_prn_train.py  # train PRN subnet
+python ./training/multipose_keypoint_train.py  # train keypoint subnet
+python ./training/multipose_detection_train.py  # train detection subnet
+python ./training/multipose_prn_train.py  # train PRN subnet
 ```
 
 ### Validation
@@ -113,9 +113,9 @@ python multipose_prn_train.py  # train PRN subnet
 
 - Run:
 ```python
-python multipose_keypoint_val.py  # validate keypoint subnet on first 2644 of val2014 marked by 'isValidation = 1', as our minval dataset.
-python multipose_detection_val.py  # validate detection subnet on val2017
-python multipose_prn_val.py  # validate PRN subnet on val2017
+python ./evaluate/multipose_keypoint_val.py  # validate keypoint subnet on first 2644 of val2014 marked by 'isValidation = 1', as our minval dataset.
+python ./evaluate/multipose_detection_val.py  # validate detection subnet on val2017
+python ./evaluate/multipose_prn_val.py  # validate PRN subnet on val2017
 ```
 
 ### To Do

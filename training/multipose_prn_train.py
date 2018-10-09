@@ -1,12 +1,16 @@
+import os, sys
+root_path = os.path.realpath(__file__).split('/training/multipose_prn_train.py')[0]
+os.chdir(root_path)
+sys.path.append(root_path)
+
 import torch
-import os
 import torch.backends.cudnn as cudnn
 from pycocotools.coco import COCO
 from torch.utils.data import DataLoader
-from pose_utils.network.trainer import Trainer
-from pose_utils.datasets.coco_data.prn_data_pipeline import PRN_CocoDataset
+from training.trainer import Trainer
+from datasets.coco_data.prn_data_pipeline import PRN_CocoDataset
 from network.posenet import poseNet
-from batch_processor import batch_processor
+from training.batch_processor import batch_processor
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # Hyper-params
@@ -29,7 +33,7 @@ params = Trainer.TrainParams()
 params.exp_name = 'prn_subnet/'
 params.subnet_name = 'prn_subnet'
 params.save_dir = './extra/models/{}'.format(params.exp_name)
-params.ckpt = 'your_ckpt.h5'
+params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
 
 params.max_epoch = 40
 params.init_lr = 1.0e-3
