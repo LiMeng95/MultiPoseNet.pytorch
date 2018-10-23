@@ -22,6 +22,63 @@ from datasets.coco_data.prn_gaussian import gaussian, crop
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+
+def _factor_closest(num, factor, is_ceil=True):
+    """Returns the closest integer to `num` that is divisible by `factor`
+
+    Actually, that's a lie. By default, we return the closest factor _greater_
+    than the input. If, however, you set `it_ceil` to `False`, we return the
+    closest factor _less_ than the input.
+    """
+    num = float(num) / factor
+    num = np.ceil(num) if is_ceil else np.floor(num)
+    return int(num) * factor
+
+
+def crop_with_factor(im, dest_size, factor=32, pad_val=0, basedon='min'):
+    """Scale and pad an image to the desired size and divisibility
+
+    Scale the specified dimension of the input image to `dest_size` then pad
+    the result until it is cleanly divisible by `factor`.
+
+    Args:
+        im (Image): The input image.
+        dest_size (int): The desired size of the unpadded, scaled image's
+            dimension specified by `basedon`.
+        factor (int): Pad the scaled image until it is factorable
+        pad_val (number): Value to pad with.
+        basedon (string): Specifies which dimension to base the scaling on.
+            Valid inputs are 'min', 'max', 'w', and 'h'. Defaults to 'min'.
+
+    Returns:
+        A tuple of three elements:
+            - The scaled and padded image.
+            - The scaling factor.
+            - The size of the non-padded part of the resulting image.
+    """
+    # Compute the scaling factor.
+    im_size_min, im_size_max = np.min(im.shape[0:2]), np.max(im.shape[0:2])
+    im_base = {'min': im_size_min,
+               'max': im_size_max,
+               'w': im.shape[1],
+               'h': im.shape[0]}
+    im_scale = float(dest_size) / im_base.get(basedon, im_size_min)
+
+    # Scale the image.
+    im = cv2.resize(im, None, fx=im_scale, fy=im_scale)
+
+    # Compute the padded image shape. Ensure it's divisible by factor.
+    h, w = im.shape[:2]
+    new_h, new_w = _factor_closest(h, factor), _factor_closest(w, factor)
+    new_shape = [new_h, new_w] if im.ndim < 3 else [new_h, new_w, im.shape[-1]]
+
+    # Pad the image.
+    im_padded = np.full(new_shape, fill_value=pad_val, dtype=im.dtype)
+    im_padded[0:h, 0:w] = im
+
+    return im_padded, im_scale, im.shape
+
+
 class TestParams(object):
 
     trunk = 'resnet101'  # select the model
@@ -82,40 +139,24 @@ class Tester(object):
 
             img_name = coco.loadImgs(img_id)[0]['file_name']
 
-            img = cv2.imread(os.path.join(self.params.coco_root, 'images/val2017/', img_name)).astype(np.float32)
-            shape_dst = np.max(img.shape)
-            scale = float(shape_dst) / self.params.inp_size
-            pad_size = np.abs(img.shape[1] - img.shape[0])
-            img_resized = np.pad(img, ([0, pad_size], [0, pad_size], [0, 0]), 'constant')[:shape_dst, :shape_dst]
-            img_resized = cv2.resize(img_resized, (self.params.inp_size, self.params.inp_size))
-            img_input = resnet_preprocess(img_resized)
-            img_input = torch.from_numpy(np.expand_dims(img_input, 0))
+            oriImg = cv2.imread(os.path.join(self.params.coco_root, 'images/val2017/', img_name)).astype(np.float32)
+            multiplier = self._get_multiplier(oriImg)
 
-            with torch.no_grad():
-                img_input = img_input.cuda(device=self.params.gpus[0])
+            # Get results of original image
+            orig_heat, orig_bbox_all = self._get_outputs(multiplier, oriImg)
 
-            heatmaps, [scores, classification, transformed_anchors] = self.model([img_input, self.params.subnet_name])
-            heatmaps = heatmaps.cpu().detach().numpy()
-            heatmaps = np.squeeze(heatmaps, 0)
-            heatmaps = np.transpose(heatmaps, (1, 2, 0))
-            heatmap_max = np.max(heatmaps[:, :, :17], 2)
+            # Get results of flipped image
+            swapped_img = oriImg[:, ::-1, :]
+            flipped_heat, flipped_bbox_all = self._get_outputs(multiplier, swapped_img)
+
+            # compute averaged heatmap
+            heatmaps = self._handle_heat(orig_heat, flipped_heat)
+
             # segment_map = heatmaps[:, :, 17]
             param = {'thre1': 0.1, 'thre2': 0.05, 'thre3': 0.5}
-            joint_list = get_joint_list(img_resized, param, heatmaps[:, :, :17], scale)
-            del img_resized
+            joint_list = get_joint_list(oriImg, param, heatmaps[:, :, :17], 1)
 
-            # bounding box from retinanet
-            scores = scores.cpu().detach().numpy()
-            classification = classification.cpu().detach().numpy()
-            transformed_anchors = transformed_anchors.cpu().detach().numpy()
-            idxs = np.where(scores > 0.5)
-            bboxs=[]
-            for j in range(idxs[0].shape[0]):
-                bbox = transformed_anchors[idxs[0][j], :]*scale
-                if int(classification[idxs[0][j]]) == 0:  # class0=people
-                    bboxs.append(bbox.tolist())
-
-            prn_result = self.prn_process(joint_list.tolist(), bboxs, img_name, img_id)
+            prn_result = self.prn_process(joint_list.tolist(), orig_bbox_all[1], img_name, img_id)
             for result in prn_result:
                 keypoints = result['keypoints']
                 coco_keypoint = []
@@ -193,6 +234,85 @@ class Tester(object):
         if self.params.testresult_write_json:
             with open(self.params.testresult_dir+'multipose_results.json', "w") as f:
                 json.dump(multipose_results, f)
+
+    def _get_multiplier(self, img):
+        """Computes the sizes of image at different scales
+        :param img: numpy array, the current image
+        :returns : list of float. The computed scales
+        """
+        scale_search = [0.5, 1., 1.5, 2, 2.5]
+        # scale_search = [0.8, 1., 1.2]
+        # scale_search = [1.]
+        return [x * 480 / float(img.shape[0]) for x in scale_search]
+
+    def _get_outputs(self, multiplier, img):
+        """Computes the averaged heatmap and paf for the given image
+        :param multiplier:
+        :param origImg: numpy array, the image being processed
+        :param model: pytorch model
+        :returns: numpy arrays, the averaged paf and heatmap
+        """
+
+        heatmap_avg = np.zeros((img.shape[0], img.shape[1], 17))
+        bbox_all=[]
+        max_scale = multiplier[-1]
+        max_size = max_scale * img.shape[0]
+        # padding
+        max_cropped, _, _ = crop_with_factor(
+            img, max_size, factor=32)
+
+        for m in range(len(multiplier)):
+            scale = multiplier[m]
+            inp_size = scale * img.shape[0]
+
+            # padding
+            im_cropped, im_scale, real_shape = crop_with_factor(
+                img, inp_size, factor=32, pad_val=128)
+            im_data = resnet_preprocess(im_cropped)
+
+            im_data = np.expand_dims(im_data, 0)
+            with torch.no_grad():
+                im_data = torch.from_numpy(im_data).type(torch.FloatTensor).cuda(device=self.params.gpus[0])
+
+            heatmaps, [scores, classification, transformed_anchors] = self.model([im_data, self.params.subnet_name])
+            heatmaps = heatmaps.cpu().detach().numpy().transpose(0, 2, 3, 1)
+            scores = scores.cpu().detach().numpy()
+            classification = classification.cpu().detach().numpy()
+            transformed_anchors = transformed_anchors.cpu().detach().numpy()
+
+            heatmap = heatmaps[0, :int(im_cropped.shape[0] / 4), :int(im_cropped.shape[1] / 4), :]
+            heatmap = cv2.resize(heatmap, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+            heatmap = heatmap[0:real_shape[0], 0:real_shape[1], :]
+            heatmap = cv2.resize(
+                heatmap, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
+
+            heatmap_avg = heatmap_avg + heatmap / len(multiplier)
+
+            # bboxs
+            idxs = np.where(scores > 0.5)
+            bboxs=[]
+            for j in range(idxs[0].shape[0]):
+                bbox = transformed_anchors[idxs[0][j], :]/im_scale
+                if int(classification[idxs[0][j]]) == 0:  # class0=people
+                    bboxs.append(bbox.tolist())
+            bbox_all.append(bboxs)
+
+        return heatmap_avg, bbox_all
+
+    def _handle_heat(self, normal_heat, flipped_heat):
+        """Compute the average of normal and flipped heatmap
+        :param normal_heat: numpy array, the normal heatmap
+        :param flipped_heat: numpy array, the flipped heatmap
+        :returns: numpy arrays, the averaged heatmap
+        """
+
+        # The order to swap left and right of heatmap
+        swap_heat = np.array((0, 4, 5, 6, 1, 2, 3, 10, 11, 12,
+                              7, 8, 9, 14, 13, 16, 15))
+
+        averaged_heatmap = (normal_heat + flipped_heat[:, ::-1, :][:, :, swap_heat]) / 2.
+
+        return averaged_heatmap
 
     def prn_process(self, kps, bbox_list, file_name, image_id=0):
 

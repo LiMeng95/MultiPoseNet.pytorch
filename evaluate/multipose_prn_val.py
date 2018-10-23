@@ -42,6 +42,9 @@ if backbone == 'resnet101':
 elif backbone == 'resnet50':
     model = poseNet(50, prn_node_count=node_count, prn_coeff=coeff)
 
+for name, module in model.named_children():
+    for para in module.parameters():
+        para.requires_grad = False
 
 tester = Tester(model, params, batch_processor, valid_data)
 tester.val()

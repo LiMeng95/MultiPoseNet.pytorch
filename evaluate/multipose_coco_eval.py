@@ -25,5 +25,9 @@ if backbone == 'resnet101':
 elif backbone == 'resnet50':
     model = poseNet(50)
 
+for name, module in model.named_children():
+    for para in module.parameters():
+        para.requires_grad = False
+
 tester = Tester(model, params)
 tester.coco_eval()  # pic_test

@@ -234,22 +234,22 @@ class poseNet(nn.Module):
 
             ##################################################################################
             # keypoints subnet
-            dt5 = self.convt1(p5)
-            d5 = self.convs1(dt5)
-            dt4 = self.convt2(p4)
-            d4 = self.convs2(dt4)
-            dt3 = self.convt3(p3)
-            d3 = self.convs3(dt3)
-            dt2 = self.convt4(p2)
-            d2 = self.convs4(dt2)
+            p5 = self.convt1(p5)
+            p5 = self.convs1(p5)
+            p4 = self.convt2(p4)
+            p4 = self.convs2(p4)
+            p3 = self.convt3(p3)
+            p3 = self.convs3(p3)
+            p2 = self.convt4(p2)
+            p2 = self.convs4(p2)
 
-            up5 = self.upsample1(d5)
-            up4 = self.upsample2(d4)
-            up3 = self.upsample3(d3)
+            p5 = self.upsample1(p5)
+            p4 = self.upsample2(p4)
+            p3 = self.upsample3(p3)
 
-            concat = self.concat(up5, up4, up3, d2)
-            smooth = F.relu(self.conv2(concat))
-            predict_keypoint = self.convfin(smooth)
+            concat = self.concat(p5, p4, p3, p2)
+            predict_keypoint = self.convfin(F.relu(self.conv2(concat)))
+            del p5, p4, p3, p2, concat
 
             ##################################################################################
             # detection subnet
@@ -286,22 +286,21 @@ class poseNet(nn.Module):
 
         ##################################################################################
         # keypoints subnet
-        dt5 = self.convt1(p5)
-        d5 = self.convs1(dt5)
-        dt4 = self.convt2(p4)
-        d4 = self.convs2(dt4)
-        dt3 = self.convt3(p3)
-        d3 = self.convs3(dt3)
-        dt2 = self.convt4(p2)
-        d2 = self.convs4(dt2)
+        p5 = self.convt1(p5)
+        p5 = self.convs1(p5)
+        p4 = self.convt2(p4)
+        p4 = self.convs2(p4)
+        p3 = self.convt3(p3)
+        p3 = self.convs3(p3)
+        p2 = self.convt4(p2)
+        p2 = self.convs4(p2)
 
-        up5 = self.upsample1(d5)
-        up4 = self.upsample2(d4)
-        up3 = self.upsample3(d3)
+        p5 = self.upsample1(p5)
+        p4 = self.upsample2(p4)
+        p3 = self.upsample3(p3)
 
-        concat = self.concat(up5, up4, up3, d2)
-        smooth = F.relu(self.conv2(concat))
-        predict_keypoint = self.convfin(smooth)
+        concat = self.concat(p5, p4, p3, p2)
+        predict_keypoint = self.convfin(F.relu(self.conv2(concat)))
         saved_for_loss.append(predict_keypoint)
 
         return predict_keypoint, saved_for_loss

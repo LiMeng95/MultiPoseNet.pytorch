@@ -36,16 +36,16 @@ python ./evaluate/multipose_coco_eval.py  # COCO evaluation
 - mAP (baseline checkpoint, temporarily)
 
 ```
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.393
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.633
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.401
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.262
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.586
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.473
- Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.661
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.492
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.319
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.687
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.536
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.741
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.587
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.498
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.591
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.589
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.753
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.633
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.535
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.670
 ```
 
 ### Requirements
