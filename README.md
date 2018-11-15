@@ -2,11 +2,13 @@
 
 This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04067) ( ECCV 2018, Muhammed Kocabas et al.)
 
-![baseline checkpoint result](./demo/output/pic3_canvas.png)
+![baseline checkpoint result](./demo/output/pic1_canvas.png)
 
 [![License](https://img.shields.io/github/license/mashape/apistatus.svg)](https://opensource.org/licenses/MIT) 
 
 ### Contents
+
+0. [**Update**](#update)
 
 1. [Requirements](#requirements)
 2. [Training](#training)
@@ -36,21 +38,34 @@ python ./evaluate/multipose_coco_eval.py  # COCO evaluation
 - mAP (baseline checkpoint, temporarily)
 
 ```
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.536
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.741
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.587
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.498
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.591
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.589
- Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.753
- Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.633
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.535
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.670
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.590
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.791
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.644
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.565
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.636
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 20 ] = 0.644
+ Average Recall     (AR) @[ IoU=0.50      | area=   all | maxDets= 20 ] = 0.810
+ Average Recall     (AR) @[ IoU=0.75      | area=   all | maxDets= 20 ] = 0.689
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets= 20 ] = 0.601
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets= 20 ] = 0.709
 ```
 
 ### Requirements
 
 #### Prerequisites
+- **Disable cudnn for batch_norm**: (See: [@Microsoft / human-pose-estimation.pytorch#installation](https://github.com/Microsoft/human-pose-estimation.pytorch#installation))
+
+```bash
+# PYTORCH=/path/to/pytorch
+# for pytorch v0.4.0
+sed -i "1194s/torch\.backends\.cudnn\.enabled/False/g" ${PYTORCH}/torch/nn/functional.py
+# for pytorch v0.4.1
+sed -i "1254s/torch\.backends\.cudnn\.enabled/False/g" ${PYTORCH}/torch/nn/functional.py
+
+# Note that instructions like # PYTORCH=/path/to/pytorch indicate that you should pick # a path where you'd like to have pytorch installed and then set an environment
+# variable (PYTORCH in this case) accordingly.
+```
+
 - If you are using Anaconda, we suggest you create a new conda environment :`conda env create -f multipose_environment.yaml`. Maybe you should change the `channels:` and `prefix:` setting in `multipose_environment.yaml` to fit your own Anaconda environment.
   - `source activate Multipose`
   - `pip install pycocotools`
@@ -108,7 +123,7 @@ python ./training/multipose_prn_train.py  # train PRN subnet
 ### Validation
 
 - Prepare checkpoint:
-  - Download our baseline model ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
+  - Download our baseline model ([Google Drive](https://drive.google.com/open?id=1Y38q5mIY2XL7mmdaBrF06beYcZZO6v2Z),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
   - Specify the checkpoints file path `params.ckpt` in file `multipose_*_val.py`. 
 
 - Run:
@@ -121,15 +136,17 @@ python ./evaluate/multipose_prn_val.py  # validate PRN subnet on val2017
 ### To Do
 
 - [x] Keypoint Estimation Subnet for 17 human keypoints annotated in [COCO dataset](http://cocodataset.org/)
-- [ ] Keypoint Estimation Subnet with person segmentation mask and intermediate supervision
+- [x] Keypoint Estimation Subnet with intermediate supervision
 - [x] Combine Keypoint Estimation Subnet with Person Detection Subnet(RetinaNet)
 - [x] Combine Keypoint Estimation Subnet with [Pose Residual Network](https://github.com/salihkaragoz/pose-residual-network-pytorch/tree/master)
+- [ ] Keypoint Estimation Subnet with person segmentation mask
 
 ### Update
 
 - 180925:
   - Add Person Detection Subnet (RetinaNet) in `posenet.py`.
   - Add NMS extension in `./lib`.
+
 - 180930:
   - Add the training code `multipose_detection_train.py` for RetinaNet.  
   - Add `multipose_keypoint_*.py` and `multipose_detection_*.py` for Keypoint Estimation Subnet and Person Detection Subnet respectively. Remove `multipose_resnet_*.py`.
@@ -137,21 +154,17 @@ python ./evaluate/multipose_prn_val.py  # validate PRN subnet on val2017
 - 1801003:
   - Add the training code `multipose_prn_train.py` for PRN.  
   - Add `multipose_coco_eval.py` for COCO evaluation.
-  - New checkpoint ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101), **it performs poorly on COCO evaluation temporarily**
 
+- 181115:
+  - New dataloader for detection subnet, remove `RetinaNet_data_pipeline.py`
+  - Add intermediate supervision in Keypoint Estimation Subnet
+  - Enable batch_norm for Keypoint Estimation Subnet. 
+  - New prerequisites: [Disable cudnn for batch_norm](https://github.com/LiMeng95/MultiPoseNet.pytorch#prerequisites)
+  - New checkpoint ([Google Drive](https://drive.google.com/open?id=1Y38q5mIY2XL7mmdaBrF06beYcZZO6v2Z),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101)
 
 ### Acknowledgements
 
 - [@ZheC Realtime_Multi-Person_Pose_Estimation](https://github.com/ZheC/Realtime_Multi-Person_Pose_Estimation) : The first 4 Training Steps to generate our own COCO dataset.
 - Thanks [@IcewineChen](https://github.com/IcewineChen/pytorch-MultiPoseNet) for the implement of `posenet`.
 - Thanks [@yhenon](https://github.com/yhenon/pytorch-retinanet) for the implement of RetinaNet in PyTorch.
-
-### Citation
-```
-@Inproceedings{kocabas18prn,
-  Title          = {Multi{P}ose{N}et: Fast Multi-Person Pose Estimation using Pose Residual Network},
-  Author         = {Kocabas, Muhammed and Karagoz, Salih and Akbas, Emre},
-  Booktitle      = {European Conference on Computer Vision (ECCV)},
-  Year           = {2018}
-}
-```
+- [@Microsoft / human-pose-estimation.pytorch#installation](https://github.com/Microsoft/human-pose-estimation.pytorch#installation) :Disable cudnn for batch_norm
