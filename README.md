@@ -23,7 +23,7 @@ This is a pytorch implementation of [MultiPoseNet](https://arxiv.org/abs/1807.04
 Run inference on your own pictures.
 
 - Prepare checkpoint:
-  - Download our baseline model ([Google Drive](<https://drive.google.com/open?id=1XzEBWOKujgYVX_VvP9L9dZ1KlwRacLT9>),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
+  - Download our baseline model ([Google Drive](https://drive.google.com/open?id=1Y38q5mIY2XL7mmdaBrF06beYcZZO6v2Z),  [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/f/8b7f780fe1df46febe73/), backbone: resnet101) or use your own model.
   - Specify the checkpoints file path `params.ckpt` in file `multipose_test.py`. 
   - Specify the pictures file path `testdata_dir`  and results file path `testresult_dir` in file `multipose_test.py`. 
 
