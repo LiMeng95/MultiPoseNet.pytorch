@@ -170,8 +170,8 @@ class Trainer(object):
         self.model = ListDataParallel(self.model, device_ids=self.params.gpus)
         self.model = self.model.cuda(self.params.gpus[0])
         self.model.train()
-        self.model.module.freeze_bn()
-
+        if self.params.subnet_name != 'keypoint_subnet':
+            self.model.module.freeze_bn()  # nn.BatchNorm2d.eval() if not 'keypoint_subnet'
 
     def train(self):
         best_loss = np.inf
@@ -306,7 +306,7 @@ class Trainer(object):
             sum_loss.add(loss.item())
             self._process_log(saved_for_log, logs)
 
-            if step % self.params.print_freq == 0:
+            if step % self.params.print_freq == 0 or step == len(self.val_data)-1:
                 self._print_log(step, logs, 'Validation', max_n_batch=min(n_batch, len(self.val_data)))
 
             self.data_timer.tic()
@@ -315,7 +315,8 @@ class Trainer(object):
         mean, std = sum_loss.value()
         logger.info('Validation loss: mean: {}, std: {}'.format(mean, std))
         self.model.train(mode=training_mode)
-        self.model.module.freeze_bn()
+        if self.params.subnet_name != 'keypoint_subnet':
+            self.model.module.freeze_bn()
         return mean
 
     def _process_log(self, src_dict, dest_dict):
