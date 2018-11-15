@@ -161,6 +161,12 @@ class poseNet(nn.Module):
 
         ##################################################################################
         # keypoints subnet
+        # intermediate supervision
+        self.convfin_k2 = nn.Conv2d(256, 19, kernel_size=1, stride=1, padding=0)
+        self.convfin_k3 = nn.Conv2d(256, 19, kernel_size=1, stride=1, padding=0)
+        self.convfin_k4 = nn.Conv2d(256, 19, kernel_size=1, stride=1, padding=0)
+        self.convfin_k5 = nn.Conv2d(256, 19, kernel_size=1, stride=1, padding=0)
+
         # 2 conv(kernel=3x3)，change channels from 256 to 128
         self.convt1 = nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1)
         self.convt2 = nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1)
@@ -178,12 +184,12 @@ class poseNet(nn.Module):
 
         self.concat = Concat()
         self.conv2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1)
-        self.convfin = nn.Conv2d(256, 17, kernel_size=1, stride=1, padding=0)
+        self.convfin = nn.Conv2d(256, 18, kernel_size=1, stride=1, padding=0)
 
         ##################################################################################
         # detection subnet
         self.regressionModel = RegressionModel(256)
-        self.classificationModel = ClassificationModel(256, num_classes=80)
+        self.classificationModel = ClassificationModel(256, num_classes=1)
         self.anchors = Anchors()
         self.regressBoxes = BBoxTransform()
         self.clipBoxes = ClipBoxes()
@@ -230,7 +236,7 @@ class poseNet(nn.Module):
         else:  # entire_net
             features = self.fpn(img_batch)
             p2, p3, p4, p5 = features[0]  # fpn features for keypoint subnet
-            features = features[1]  # fpn features for keypoint subnet
+            features = features[1]  # fpn features for detection subnet
 
             ##################################################################################
             # keypoints subnet
@@ -262,7 +268,7 @@ class poseNet(nn.Module):
 
             scores = torch.max(classification, dim=2, keepdim=True)[0]
 
-            scores_over_thresh = (scores > 0.05)[0, :, 0]
+            scores_over_thresh = (scores > 0.05)[0, :, 0]#0.05
 
             if scores_over_thresh.sum() == 0:
                 # no boxes to NMS, just return
@@ -286,6 +292,13 @@ class poseNet(nn.Module):
 
         ##################################################################################
         # keypoints subnet
+        # intermediate supervision
+        saved_for_loss.append(self.convfin_k2(p2))
+        saved_for_loss.append(self.upsample3(self.convfin_k3(p3)))
+        saved_for_loss.append(self.upsample2(self.convfin_k4(p4)))
+        saved_for_loss.append(self.upsample1(self.convfin_k5(p5)))
+
+        #
         p5 = self.convt1(p5)
         p5 = self.convs1(p5)
         p4 = self.convt2(p4)
@@ -299,8 +312,7 @@ class poseNet(nn.Module):
         p4 = self.upsample2(p4)
         p3 = self.upsample3(p3)
 
-        concat = self.concat(p5, p4, p3, p2)
-        predict_keypoint = self.convfin(F.relu(self.conv2(concat)))
+        predict_keypoint = self.convfin(F.relu(self.conv2(self.concat(p5, p4, p3, p2))))
         saved_for_loss.append(predict_keypoint)
 
         return predict_keypoint, saved_for_loss
@@ -343,7 +355,7 @@ class poseNet(nn.Module):
         subnet_name = args[0]
 
         if subnet_name == 'keypoint_subnet':
-            return build_keypoint_loss(saved_for_loss, args[1], args[2], args[3], args[4])
+            return build_keypoint_loss(saved_for_loss, args[1], args[2])
         elif subnet_name == 'detection_subnet':
             return build_detection_loss(saved_for_loss, args[1])
         elif subnet_name == 'prn_subnet':
@@ -352,26 +364,41 @@ class poseNet(nn.Module):
             return 0
 
 
-def build_keypoint_loss(saved_for_loss, heat_temp, heat_weight, batch_size, gpus):
+def build_keypoint_loss(saved_for_loss, heat_temp, heat_weight):
 
     names = build_names()
     saved_for_log = OrderedDict()
     criterion = nn.MSELoss(size_average=True).cuda()
     total_loss = 0
+    div1 = 1.
+    #div2 = 100.
 
-    pred1 = saved_for_loss[0] * heat_weight
-    gt1 = heat_weight * heat_temp
+    for j in range(5):
 
-    # Compute losses
-    loss1 = criterion(pred1, gt1)
-    total_loss += loss1
+        pred1 = saved_for_loss[j][:, :18, :, :] * heat_weight
+        gt1 = heat_weight * heat_temp
 
-    # Get value from Tensor and save for log
-    saved_for_log[names[0]] = loss1.item()
+        #pred2 = saved_for_loss[j][:, 18:, :, :]
+        #gt2 = mask_all
+
+        # Compute losses
+        loss1 = criterion(pred1, gt1)/div1  # heatmap_loss
+        #loss2 = criterion(pred2, gt2)/div2  # mask_loss
+        total_loss += loss1
+        #total_loss += loss2
+
+        # Get value from Tensor and save for log
+        saved_for_log[names[j*2]] = loss1.item()
+        #saved_for_log[names[j*2+1]] = loss2.item()
+
     saved_for_log['max_ht'] = torch.max(
-        saved_for_loss[-1].data[:, 0:-1, :, :]).item()
+        saved_for_loss[-1].data[:, :18, :, :]).item()
     saved_for_log['min_ht'] = torch.min(
-        saved_for_loss[-1].data[:, 0:-1, :, :]).item()
+        saved_for_loss[-1].data[:, :18, :, :]).item()
+    #saved_for_log['max_mask'] = torch.max(
+    #    saved_for_loss[-1].data[:, 18:, :, :]).item()
+    #saved_for_log['min_mask'] = torch.min(
+    #    saved_for_loss[-1].data[:, 18:, :, :]).item()
 
     return total_loss, saved_for_log
 
@@ -419,7 +446,10 @@ def build_prn_loss(saved_for_loss, label):
 
 def build_names():
     names = []
-    for j in range(1, 2):
-        names.append('loss_end%d' % j)
+    for j in range(2, 6):
+        names.append('heatmap_loss_k%d' % j)
+        names.append('seg_loss_k%d' % j)
+    names.append('heatmap_loss')
+    names.append('seg_loss')
     return names
 

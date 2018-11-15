@@ -47,8 +47,8 @@ class FocalLoss(nn.Module):
             bbox_annotation = bbox_annotation[bbox_annotation[:, 4] != -1]
 
             if bbox_annotation.shape[0] == 0:
-                regression_losses.append(torch.tensor(0).float().cuda())
-                classification_losses.append(torch.tensor(0).float().cuda())
+                regression_losses.append(torch.tensor(0, requires_grad=True).float().cuda())
+                classification_losses.append(torch.tensor(0, requires_grad=True).float().cuda())
 
                 continue
 
