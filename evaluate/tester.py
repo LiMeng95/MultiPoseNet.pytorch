@@ -70,7 +70,9 @@ def crop_with_factor(im, dest_size, factor=32, pad_val=0, basedon='min'):
     # Compute the padded image shape. Ensure it's divisible by factor.
     h, w = im.shape[:2]
     new_h, new_w = _factor_closest(h, factor), _factor_closest(w, factor)
+    # new_ = max(new_h, new_w)
     new_shape = [new_h, new_w] if im.ndim < 3 else [new_h, new_w, im.shape[-1]]
+    # new_shape = [new_, new_] if im.ndim < 3 else [new_, new_, im.shape[-1]]
 
     # Pad the image.
     im_padded = np.full(new_shape, fill_value=pad_val, dtype=im.dtype)
@@ -85,12 +87,12 @@ class TestParams(object):
     coeff = 2
     in_thres = 0.21
 
-    testdata_dir = './extra/test_images/'
-    testresult_dir = './extra/output/'
+    testdata_dir = './demo/test_images/'
+    testresult_dir = './demo/output/'
     testresult_write_image = False  # write image results or not
     testresult_write_json = False  # write json results or not
     gpus = [0]
-    ckpt = './extra/models/ckpt_baseline.h5'  # checkpoint file to load, no need to change this
+    ckpt = './demo/models/ckpt_baseline_resnet101.h5'  # checkpoint file to load, no need to change this
     coco_root = 'coco_root/'
     coco_result_filename = './extra/multipose_coco2017_results.json'
 
@@ -154,9 +156,17 @@ class Tester(object):
 
             # segment_map = heatmaps[:, :, 17]
             param = {'thre1': 0.1, 'thre2': 0.05, 'thre3': 0.5}
-            joint_list = get_joint_list(oriImg, param, heatmaps[:, :, :17], 1)
+            joint_list = get_joint_list(oriImg, param, heatmaps[:, :, :18], 1)
+            joint_list = joint_list.tolist()
 
-            prn_result = self.prn_process(joint_list.tolist(), orig_bbox_all[1], img_name, img_id)
+            joints = []
+            for joint in joint_list:
+                if int(joint[-1]) != 1:
+                    joint[-1] = max(0, int(joint[-1]) - 1)
+                    joints.append(joint)
+            joint_list = joints
+
+            prn_result = self.prn_process(joint_list, orig_bbox_all[1], img_name, img_id)
             for result in prn_result:
                 keypoints = result['keypoints']
                 coco_keypoint = []
@@ -205,11 +215,19 @@ class Tester(object):
             heatmaps = heatmaps.cpu().detach().numpy()
             heatmaps = np.squeeze(heatmaps, 0)
             heatmaps = np.transpose(heatmaps, (1, 2, 0))
-            heatmap_max = np.max(heatmaps[:, :, :17], 2)
+            heatmap_max = np.max(heatmaps[:, :, :18], 2)
             # segment_map = heatmaps[:, :, 17]
             param = {'thre1': 0.1, 'thre2': 0.05, 'thre3': 0.5}
-            joint_list = get_joint_list(img_resized, param, heatmaps[:, :, :17], scale)
+            joint_list = get_joint_list(img_resized, param, heatmaps[:, :, :18], scale)
+            joint_list = joint_list.tolist()
             del img_resized
+
+            joints = []
+            for joint in joint_list:
+                if int(joint[-1]) != 1:
+                    joint[-1] = max(0, int(joint[-1]) - 1)
+                    joints.append(joint)
+            joint_list = joints
 
             # bounding box from retinanet
             scores = scores.cpu().detach().numpy()
@@ -222,7 +240,7 @@ class Tester(object):
                 if int(classification[idxs[0][j]]) == 0:  # class0=people
                     bboxs.append(bbox.tolist())
 
-            prn_result = self.prn_process(joint_list.tolist(), bboxs, img_name)
+            prn_result = self.prn_process(joint_list, bboxs, img_name)
             for result in prn_result:
                 multipose_results.append(result)
 
@@ -241,9 +259,7 @@ class Tester(object):
         :returns : list of float. The computed scales
         """
         scale_search = [0.5, 1., 1.5, 2, 2.5]
-        # scale_search = [0.8, 1., 1.2]
-        # scale_search = [1.]
-        return [x * 480 / float(img.shape[0]) for x in scale_search]
+        return [x * self.params.inp_size / float(img.shape[0]) for x in scale_search]
 
     def _get_outputs(self, multiplier, img):
         """Computes the averaged heatmap and paf for the given image
@@ -253,13 +269,13 @@ class Tester(object):
         :returns: numpy arrays, the averaged paf and heatmap
         """
 
-        heatmap_avg = np.zeros((img.shape[0], img.shape[1], 17))
-        bbox_all=[]
-        max_scale = multiplier[-1]
-        max_size = max_scale * img.shape[0]
-        # padding
-        max_cropped, _, _ = crop_with_factor(
-            img, max_size, factor=32)
+        heatmap_avg = np.zeros((img.shape[0], img.shape[1], 18))
+        bbox_all = []
+        # max_scale = multiplier[-1]
+        # max_size = max_scale * img.shape[0]
+        # # padding
+        # max_cropped, _, _ = crop_with_factor(
+        #     img, max_size, factor=32)
 
         for m in range(len(multiplier)):
             scale = multiplier[m]
@@ -307,8 +323,8 @@ class Tester(object):
         """
 
         # The order to swap left and right of heatmap
-        swap_heat = np.array((0, 4, 5, 6, 1, 2, 3, 10, 11, 12,
-                              7, 8, 9, 14, 13, 16, 15))
+        swap_heat = np.array((0, 1, 5, 6, 7, 2, 3, 4, 11, 12,
+                              13, 8, 9, 10, 15, 14, 17, 16))#, 18
 
         averaged_heatmap = (normal_heat + flipped_heat[:, ::-1, :][:, :, swap_heat]) / 2.
 

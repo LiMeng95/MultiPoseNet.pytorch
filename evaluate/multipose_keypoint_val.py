@@ -26,9 +26,9 @@ params.batch_size = 6 * len(params.gpus)
 params.print_freq = 50
 
 # validation data
-valid_data = get_loader(json_path, data_dir, mask_dir, inp_size,
-                        feat_stride, preprocess='resnet', training=False,
-                        batch_size=params.batch_size-2 * len(params.gpus), shuffle=False, num_workers=4)
+valid_data = get_loader(json_path, data_dir, mask_dir, inp_size, feat_stride,
+                        preprocess='resnet', batch_size=params.batch_size-2*len(params.gpus), training=False,
+                        shuffle=False, num_workers=4, subnet=params.subnet_name)
 print('val dataset len: {}'.format(len(valid_data.dataset)))
 
 # model

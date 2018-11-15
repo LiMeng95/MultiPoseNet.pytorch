@@ -36,7 +36,7 @@ fpn_keypoint_para = ['toplayer', 'flatlayer1', 'flatlayer2',
                      'flatlayer3', 'smooth1', 'smooth2', 'smooth3']
 retinanet_para = ['regressionModel', 'classificationModel']
 keypoint_para = ['convt1', 'convt2', 'convt3', 'convt4', 'convs1', 'convs2', 'convs3', 'convs4', 'upsample1',
-                 'upsample2', 'upsample3', 'conv2', 'convfin']
+                 'upsample2', 'upsample3', 'conv2', 'convfin', 'convfin_k2', 'convfin_k3', 'convfin_k4', 'convfin_k5']
 prn_para = ['prn']
 
 #####################################################################
@@ -47,19 +47,19 @@ json_path = coco_root+'COCO.json'
 
 # Set Training parameters
 params = Trainer.TrainParams()
-params.exp_name = 'test_whole_pipe/'
+params.exp_name = 'res101_keypoint_subnet/'
 params.subnet_name = 'keypoint_subnet'
 params.save_dir = './extra/models/{}'.format(params.exp_name)
 params.ckpt = None  # None checkpoint file to load
 params.ignore_opt_state = False
 
-params.max_epoch = 50
+params.max_epoch = 80
 params.init_lr = 1.e-4
 params.lr_decay = 0.1
 
 params.gpus = [0]
 params.batch_size = 6 * len(params.gpus)
-params.val_nbatch_end_epoch = 1000
+params.val_nbatch_end_epoch = 2000
 
 params.print_freq = 50
 
@@ -90,18 +90,17 @@ for name, module in model.named_children():
 
 print("Loading dataset...")
 # load training data
-train_data = get_loader(json_path, data_dir,
-                        mask_dir, inp_size, feat_stride,
-                        'resnet', params.batch_size,
-                        shuffle=True, training=True, num_workers=8)
+train_data = get_loader(json_path, data_dir, mask_dir, inp_size, feat_stride,
+                        preprocess='resnet', batch_size=params.batch_size, training=True,
+                        shuffle=True, num_workers=8, subnet=params.subnet_name)
 print('train dataset len: {}'.format(len(train_data.dataset)))
 
 # load validation data
 valid_data = None
 if params.val_nbatch > 0:
-    valid_data = get_loader(json_path, data_dir, mask_dir, inp_size,
-                            feat_stride, preprocess='resnet', training=False,
-                            batch_size=params.batch_size-2*len(params.gpus), shuffle=False, num_workers=8)
+    valid_data = get_loader(json_path, data_dir, mask_dir, inp_size, feat_stride,
+                            preprocess='resnet', batch_size=params.batch_size-3*len(params.gpus), training=False,
+                            shuffle=False, num_workers=8, subnet=params.subnet_name)
     print('val dataset len: {}'.format(len(valid_data.dataset)))
 
 trainable_vars = [param for param in model.parameters() if param.requires_grad]

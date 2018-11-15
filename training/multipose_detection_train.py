@@ -5,15 +5,10 @@ sys.path.append(root_path)
 
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.utils.data import DataLoader
-from torchvision import transforms
 
 from training.batch_processor import batch_processor
-from datasets.coco_data.RetinaNet_data_pipeline import (AspectRatioBasedSampler,
-                                                        Augmenter, CocoDataset,
-                                                        Normalizer, Resizer,
-                                                        collater)
 from network.posenet import poseNet
+from datasets.coco import get_loader
 from training.trainer import Trainer
 
 # Hyper-params
@@ -21,6 +16,8 @@ coco_root = '/data/COCO/'
 backbone = 'resnet101'  # 'resnet50'
 opt = 'adam'
 weight_decay = 0.000
+inp_size = 608  # input size 608*608
+feat_stride = 4
 
 # model parameters in MultiPoseNet
 fpn_resnet_para = ['conv1', 'bn1', 'layer1', 'layer2', 'layer3', 'layer4']
@@ -30,13 +27,18 @@ fpn_keypoint_para = ['toplayer', 'flatlayer1', 'flatlayer2',
                      'flatlayer3', 'smooth1', 'smooth2', 'smooth3']
 retinanet_para = ['regressionModel', 'classificationModel']
 keypoint_para = ['convt1', 'convt2', 'convt3', 'convt4', 'convs1', 'convs2', 'convs3', 'convs4', 'upsample1',
-                 'upsample2', 'upsample3', 'conv2', 'convfin']
+                 'upsample2', 'upsample3', 'conv2', 'convfin', 'convfin_k2', 'convfin_k3', 'convfin_k4', 'convfin_k5']
 prn_para = ['prn']
 
 #####################################################################
+# train detection subnet
+data_dir = coco_root+'images/'
+mask_dir = coco_root
+json_path = coco_root+'COCO.json'
+
 # Set Training parameters
 params = Trainer.TrainParams()
-params.exp_name = 'res101_detection/'
+params.exp_name = 'res101_detection_subnet/'
 params.subnet_name = 'detection_subnet'
 params.save_dir = './extra/models/{}'.format(params.exp_name)
 params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
@@ -47,8 +49,8 @@ params.init_lr = 1.e-5
 params.lr_decay = 0.1
 
 params.gpus = [0]
-params.batch_size = 2 * len(params.gpus)
-params.val_nbatch_end_epoch = 400
+params.batch_size = 25 * len(params.gpus)
+params.val_nbatch_end_epoch = 2000
 
 params.print_freq = 50
 
@@ -78,21 +80,15 @@ for name, module in model.named_children():
 
 print("Loading dataset...")
 # load training data
-dataset_train = CocoDataset(coco_root, set_name='train2017',
-                            transform=transforms.Compose([Normalizer(), Augmenter(), Resizer()]))
-sampler = AspectRatioBasedSampler(
-    dataset_train, batch_size=params.batch_size, drop_last=False)
-train_data = DataLoader(dataset_train, num_workers=3,
-                        collate_fn=collater, batch_sampler=sampler)
+train_data = get_loader(json_path, data_dir, mask_dir, inp_size, feat_stride,
+                        preprocess='resnet', batch_size=params.batch_size, training=True,
+                        shuffle=True, num_workers=8, subnet=params.subnet_name)
 print('train dataset len: {}'.format(len(train_data.dataset)))
 
 # load validation data
-dataset_val = CocoDataset(coco_root, set_name='val2017',
-                          transform=transforms.Compose([Normalizer(), Resizer()]))
-sampler_val = AspectRatioBasedSampler(
-    dataset_val, batch_size=int(params.batch_size/2), drop_last=False)
-valid_data = DataLoader(dataset_val, num_workers=3,
-                        collate_fn=collater, batch_sampler=sampler_val)
+valid_data = get_loader(json_path, data_dir, mask_dir, inp_size, feat_stride,
+                        preprocess='resnet', batch_size=params.batch_size-10*len(params.gpus), training=False,
+                        shuffle=False, num_workers=8, subnet=params.subnet_name)
 print('val dataset len: {}'.format(len(valid_data.dataset)))
 
 trainable_vars = [param for param in model.parameters() if param.requires_grad]

@@ -14,7 +14,7 @@ def batch_processor(state, batch):
     if subnet_name == 'keypoint_subnet':
         inp, heat_temp, heat_weight = batch
 
-        if not state.model.training: # used for inference
+        if not state.model.training:  # used for inference
             with torch.no_grad():
                 input_var = inp.cuda(device=gpus[0])
                 heat_weight_var = heat_weight.cuda(device=gpus[0], async=False)
@@ -25,12 +25,10 @@ def batch_processor(state, batch):
             heat_temp_var = heat_temp.cuda(device=gpus[0], async=False)
 
         inputs = [[input_var, subnet_name]]
-        gts = [subnet_name, heat_temp_var, heat_weight_var, state.params.batch_size, gpus]
+        gts = [subnet_name, heat_temp_var, heat_weight_var]
         saved_for_eval = []
     elif subnet_name == 'detection_subnet':  #'detection_subnet'
-        sample = batch#{'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale}
-        inp = sample['img']
-        anno = sample['annot']  # [x1, y1, x2, y2, category_id]
+        inp, anno = batch  # anno: [x1, y1, x2, y2, category_id]
 
         if not state.model.training:  # used for inference
             with torch.no_grad():
