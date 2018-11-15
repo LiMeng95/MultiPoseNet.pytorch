@@ -62,7 +62,8 @@ sed -i "1194s/torch\.backends\.cudnn\.enabled/False/g" ${PYTORCH}/torch/nn/funct
 # for pytorch v0.4.1
 sed -i "1254s/torch\.backends\.cudnn\.enabled/False/g" ${PYTORCH}/torch/nn/functional.py
 
-# Note that instructions like # PYTORCH=/path/to/pytorch indicate that you should pick # a path where you'd like to have pytorch installed and then set an environment
+# Note that instructions like # PYTORCH=/path/to/pytorch indicate that you should pick 
+# a path where you'd like to have pytorch installed and then set an environment
 # variable (PYTORCH in this case) accordingly.
 ```
 
