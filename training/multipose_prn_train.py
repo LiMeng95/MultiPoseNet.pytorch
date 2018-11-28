@@ -34,6 +34,7 @@ params.exp_name = 'prn_subnet/'
 params.subnet_name = 'prn_subnet'
 params.save_dir = './extra/models/{}'.format(params.exp_name)
 params.ckpt = './demo/models/ckpt_baseline_resnet101.h5'
+params.ignore_opt_state = True
 
 params.max_epoch = 40
 params.init_lr = 1.0e-3
